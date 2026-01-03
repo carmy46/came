@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CAME – Dipendente</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="page-employee">
+  <header class="topbar">
+    <div class="topbar-left">
+      <h2>CAME</h2>
+      <div id="topbarUser" class="topbar-sub muted"></div>
+    </div>
+    <div class="topbar-actions">
+      <button id="homeBtn" class="btn small" type="button" style="display:none;">← Home</button>
+      <button id="logoutBtn" class="btn small">Logout</button>
+    </div>
+  </header>
+
+  <main class="mobile-shell">
+    <div id="toast" class="toast" aria-live="polite"></div>
+    <div id="profileBox" class="card" style="display:none;">
+      <label class="label">Nome e cognome (una volta sola)</label>
+      <input id="fullName" class="input" type="text" placeholder="Es. Mario Rossi" />
+      <button id="saveNameBtn" class="btn small" type="button">Salva</button>
+      <p id="profileMsg" class="msg"></p>
+    </div>
+
+    <!-- HOME -->
+    <section id="view-home" class="view active">
+      <h3>Dashboard</h3>
+      <p class="muted" id="homeLastRefresh">Caricamento...</p>
+
+      <div class="home-grid">
+        <button class="home-card home-card-mock" type="button" data-nav="hours">
+          <div class="home-card-head">
+            <div class="home-card-title">Ore</div>
+            <div class="home-card-line"></div>
+          </div>
+          <div class="home-card-body">
+            <div class="home-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="home-metrics">
+              <div class="home-metric"><strong id="homeWeekHours">—</strong> <span class="muted">Settimana</span></div>
+              <div class="home-metric"><strong id="homeTodayHours">—</strong> <span class="muted">Oggi</span></div>
+            </div>
+          </div>
+          <div class="home-card-cta">
+            <span>Vedi dettagli</span><span class="chev">›</span>
+          </div>
+        </button>
+
+        <button class="home-card home-card-mock" type="button" data-nav="requests">
+          <div class="home-card-head">
+            <div class="home-card-title">Richieste</div>
+            <div class="home-card-line"></div>
+          </div>
+          <div class="home-card-body">
+            <div class="home-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M7 3h7l3 3v15a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M14 3v4h4" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M8 12h8M8 16h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="home-metrics">
+              <div class="home-metric"><strong id="homeReqPending">—</strong> <span class="muted">In attesa</span></div>
+              <div class="home-metric"><strong id="homeReqApproved">—</strong> <span class="muted">Approvate</span></div>
+            </div>
+          </div>
+          <div class="home-card-cta">
+            <span>Gestisci</span><span class="chev">›</span>
+          </div>
+        </button>
+
+        <button class="home-card home-card-mock" type="button" data-nav="products">
+          <div class="home-card-head">
+            <div class="home-card-title">Prodotti</div>
+            <div class="home-card-line"></div>
+          </div>
+          <div class="home-card-body">
+            <div class="home-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M21 8.5 12 13 3 8.5 12 4l9 4.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M21 8.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M12 13v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="home-metrics">
+              <div class="home-metric"><strong id="homePoOpen">—</strong> <span class="muted">Da consegnare</span></div>
+              <div class="home-metric"><strong id="homePoDelivered">—</strong> <span class="muted">Consegnati</span></div>
+            </div>
+          </div>
+          <div class="home-card-cta">
+            <span>Visualizza</span><span class="chev">›</span>
+          </div>
+        </button>
+
+        <button class="home-card home-card-mock" type="button" data-nav="archive">
+          <div class="home-card-head">
+            <div class="home-card-title">Archivio</div>
+            <div class="home-card-line"></div>
+          </div>
+          <div class="home-card-body">
+            <div class="home-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="home-metrics">
+              <div class="home-metric"><strong>Documenti</strong> <span class="muted">salvati</span></div>
+              <div class="home-metric"><strong>Consulta</strong> <span class="muted">file</span></div>
+            </div>
+          </div>
+          <div class="home-card-cta">
+            <span>Apri</span><span class="chev">›</span>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- ORE -->
+    <section id="view-hours" class="view">
+      <h3>Registrazione ore</h3>
+
+      <form id="hoursForm" class="form-card">
+        <label class="label">Data</label>
+        <input class="input" type="date" id="work_date" required />
+
+        <p class="muted" style="margin:10px 0 0;">
+          Puoi inserire <strong>più luoghi</strong> nello stesso giorno: aggiungi più righe e premi <strong>Invia</strong> una sola volta.
+        </p>
+
+        <div id="hoursRows" class="hours-rows"></div>
+
+        <div class="grid2" style="margin-top:10px;">
+          <button id="addHoursRowBtn" class="btn small" type="button">+ Aggiungi riga</button>
+          <button id="clearHoursRowsBtn" class="btn small" type="button">Reset righe</button>
+        </div>
+
+        <datalist id="placesList">
+          <option value="B&B Nicolas"></option>
+          <option value="B&B Giuseppe"></option>
+          <option value="B&B Veronesi app.A"></option>
+          <option value="B&B app.B"></option>
+          <option value="B&B Niguarda"></option>
+          <option value="Casa Nicolas"></option>
+          <option value="Casa Andrea"></option>
+          <option value="Enzo"></option>
+          <option value="Bar Radetzky"></option>
+          <option value="Tararossa"></option>
+          <option value="Ceccarelli"></option>
+          <option value="Lesmo"></option>
+          <option value="Residence"></option>
+          <option value="Panettiera"></option>
+          <option value="Piazza Bausan"></option>
+          <option value="Condominio Green Opificio"></option>
+          <option value="Condominio Morandi"></option>
+          <option value="Condominio Baranzate"></option>
+          <option value="Condominio Garibaldi"></option>
+          <option value="Condominio Legnone"></option>
+          <option value="Alevax"></option>
+          <option value="Caresmed"></option>
+          <option value="Cinese"></option>
+          <option value="Cassone"></option>
+          <option value="Magazzino"></option>
+          <option value="Dama"></option>
+          <option value="Condominio Via Vialba"></option>
+          <option value="Regaldi"></option>
+          <option value="Penny"></option>
+          <option value="Cernusco"></option>
+          <option value="Amico Cristiano casa"></option>
+          <option value="Amico Cristiano ufficio"></option>
+          <option value="Cristiano"></option>
+          <option value="Geraldine"></option>
+          <option value="Leone"></option>
+          <option value="Ferlazzo"></option>
+          <option value="PoliHUb"></option>
+          <option value="Schiaffino"></option>
+          <option value="E-esolution"></option>
+          <option value="Portineria Losanna"></option>
+        </datalist>
+
+        <datalist id="activitiesList">
+          <option value="Pittura"></option>
+          <option value="Facchinaggio"></option>
+          <option value="Trasloco"></option>
+          <option value="Sgombero"></option>
+          <option value="Edilizia"></option>
+          <option value="Portierato"></option>
+          <option value="Pulizia"></option>
+          <option value="Pulizia fino"></option>
+          <option value="Lavaggio vetri"></option>
+          <option value="Lavaggio moquette"></option>
+          <option value="Pattumiera"></option>
+          <option value="Accompagno ragazzi/ragazze"></option>
+        </datalist>
+
+        <button class="btn" type="submit" id="sendBtn">Invia</button>
+        <p id="msg" class="msg"></p>
+      </form>
+    </section>
+
+    <!-- ARCHIVIO -->
+    <section id="view-archive" class="view">
+      <h3>Archivio personale</h3>
+
+      <div class="archive-wrap">
+        <div class="archive-shell">
+          <div class="archive-topbar">
+            <div class="card archive-nav">
+              <div class="archive-nav-title">Sezioni</div>
+              <div class="archive-cards">
+                <button class="archive-card active" type="button" data-archive="hours">
+                  <div class="archive-card-row">
+                    <div class="archive-card-title">Ore</div>
+                    <span id="archiveCountHours" class="badge">—</span>
+                  </div>
+                  <div class="archive-card-sub">Archivio ore</div>
+                </button>
+                <button class="archive-card" type="button" data-archive="requests">
+                  <div class="archive-card-row">
+                    <div class="archive-card-title">Richieste</div>
+                    <span id="archiveCountRequests" class="badge">—</span>
+                  </div>
+                  <div class="archive-card-sub">In attesa / esito</div>
+                </button>
+                <button class="archive-card" type="button" data-archive="products">
+                  <div class="archive-card-row">
+                    <div class="archive-card-title">Prodotti</div>
+                    <span id="archiveCountProducts" class="badge">—</span>
+                  </div>
+                  <div class="archive-card-sub">Ordini + consegna</div>
+                </button>
+              </div>
+            </div>
+
+            <div id="archiveFiltersCard" class="filters card">
+              <!-- Su smartphone: blocco unico Apri/Chiudi (zona cerchiata) -->
+              <details class="archive-filters-toggle">
+                <summary>
+                  <span>Filtri</span>
+                  <strong id="monthPickerLabel">—</strong>
+                </summary>
+
+                <div class="archive-filters-body">
+                  <details class="month-toggle" open>
+                    <summary>
+                      <span class="muted">Mese</span>
+                      <strong id="monthPickerLabelInner">—</strong>
+                    </summary>
+                    <div style="margin-top:10px;">
+                      <input class="input" type="month" id="monthPicker" />
+                    </div>
+                  </details>
+
+                  <div class="archive-stats-inline">
+                    <div class="statPill">
+                      <div class="muted">Totale mese</div>
+                      <div id="monthTotal" class="statValue">—</div>
+                    </div>
+                    <div class="statPill">
+                      <div class="muted">Totale oggi</div>
+                      <div id="todayTotal" class="statValue">—</div>
+                    </div>
+                  </div>
+
+                  <div class="archive-more">
+                    <div class="grid2 archive-actions">
+                      <button id="exportXlsxBtn" class="btn small" type="button">Export Excel</button>
+                      <button id="exportPdfBtn" class="btn small" type="button">Export PDF</button>
+                    </div>
+
+                    <div class="archive-toolbar">
+                      <input id="archiveSearch" class="input" type="text" placeholder="Cerca in archivio..." />
+                      <div class="chips">
+                        <button class="chip" type="button" data-month-quick="this">Questo mese</button>
+                        <button class="chip" type="button" data-month-quick="last">Mese scorso</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <section class="archive-main">
+            <!-- Sezioni archivio (una alla volta) -->
+            <div id="archive-sections" class="archive-sections">
+              <div id="archive-section-hours" class="archive-section active">
+                <div class="archive-section-head">
+                  <div class="archive-section-title">Ore</div>
+                  <div class="archive-section-sub muted">Riepilogo per giorno (apri/chiudi)</div>
+                </div>
+                <div id="archiveGrouped">Caricamento...</div>
+              </div>
+
+              <div id="archive-section-requests" class="archive-section">
+                <div class="archive-section-head">
+                  <div class="archive-section-title">Richieste</div>
+                  <div class="archive-section-sub muted">Gestione e storico</div>
+                </div>
+                <div class="archive-mobile-shortcut">
+                  <button class="btn small" type="button" data-archive-month-shortcut>📅 Cambia mese</button>
+                </div>
+                <div class="chips archive-subfilters">
+                  <button class="chip active" type="button" data-req-filter="all">Tutte</button>
+                  <button class="chip" type="button" data-req-filter="pending">In attesa</button>
+                  <button class="chip" type="button" data-req-filter="done">Esito</button>
+                </div>
+                <h3 class="archive-h3">Richieste in attesa</h3>
+                <div id="requestsPendingList">Caricamento...</div>
+                <div class="archive-divider"></div>
+                <h3 class="archive-h3">Richieste approvate / rifiutate</h3>
+                <div id="requestsArchiveList">Caricamento...</div>
+              </div>
+
+              <div id="archive-section-products" class="archive-section">
+                <div class="archive-section-head">
+                  <div class="archive-section-title">Prodotti</div>
+                  <div class="archive-section-sub muted">Ordini e consegne</div>
+                </div>
+                <div class="archive-mobile-shortcut">
+                  <button class="btn small" type="button" data-archive-month-shortcut>📅 Cambia mese</button>
+                </div>
+                <div class="chips archive-subfilters">
+                  <button class="chip active" type="button" data-po-filter="all">Tutti</button>
+                  <button class="chip" type="button" data-po-filter="open">Non consegnati</button>
+                  <button class="chip" type="button" data-po-filter="delivered">Consegnati</button>
+                </div>
+                <h3 class="archive-h3">Ordini prodotti</h3>
+                <div id="productsArchiveList">Caricamento...</div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- RICHIESTE -->
+    <section id="view-requests" class="view">
+      <h3>Richieste</h3>
+
+      <form id="requestsForm" class="form-card">
+        <label class="label">Tipo richiesta</label>
+        <select id="req_type" class="input" required>
+          <option value="">Seleziona...</option>
+          <option value="ferie">Ferie (da / a)</option>
+          <option value="permesso_giornaliero">Permesso giornaliero (data)</option>
+          <option value="entrata_anticipata">Permesso entrata anticipata (data + ora)</option>
+          <option value="entrata_posticipata">Permesso entrata posticipata (data + ora)</option>
+        </select>
+
+        <div id="req_dates_range" style="display:none;">
+          <div class="grid2">
+            <div>
+              <label class="label">Da (data inizio)</label>
+              <input id="req_start_date" class="input" type="date" />
+            </div>
+            <div>
+              <label class="label">A (data fine)</label>
+              <input id="req_end_date" class="input" type="date" />
+            </div>
+          </div>
+        </div>
+
+        <div id="req_date_single" style="display:none;">
+          <label class="label">Data</label>
+          <input id="req_single_date" class="input" type="date" />
+        </div>
+
+        <div id="req_time_box" style="display:none;">
+          <label class="label">Ora</label>
+          <input id="req_time" class="input" type="time" step="300" />
+          <p class="muted" style="margin-top:8px;">Consiglio: usa minuti multipli di 5.</p>
+        </div>
+
+        <label class="label">Note (opzionale)</label>
+        <textarea id="req_note" class="input" rows="3" placeholder="Es. motivo / dettaglio..."></textarea>
+
+        <button class="btn" type="submit" id="reqSendBtn">Invia richiesta</button>
+        <p id="reqMsg" class="msg"></p>
+      </form>
+
+      <p class="muted" style="margin-top:10px;">
+        Dopo l’invio, trovi tutto in <strong>Archivio</strong> (sezione Richieste).
+      </p>
+    </section>
+
+    <!-- PRODOTTI -->
+    <section id="view-products" class="view">
+      <h3>Richieste prodotti</h3>
+
+      <form id="productsForm" class="form-card">
+        <label class="label">Data</label>
+        <input id="po_date" class="input" type="date" required />
+
+        <label class="label">Luogo</label>
+        <input class="input" list="placesList" id="po_place" placeholder="Seleziona o scrivi liberamente..." required />
+
+        <label class="label">Prodotti (metti la quantità)</label>
+        <input id="poSearch" class="input" type="text" placeholder="Cerca prodotto (es. carta, sacchi...)"/>
+
+        <div id="poCart" class="product-cart" style="margin-top:10px;">
+          <div class="product-row" data-po-item="Sgrassatore">
+            <div class="product-name">Sgrassatore</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Vetril">
+            <div class="product-name">Vetril</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Detersivo Pavimenti">
+            <div class="product-name">Detersivo Pavimenti</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Detersivo Parquet">
+            <div class="product-name">Detersivo Parquet</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Anticalcare/Kit">
+            <div class="product-name">Anticalcare/Kit</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Wc Net">
+            <div class="product-name">Wc Net</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Guanti">
+            <div class="product-name">Guanti</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Olè">
+            <div class="product-name">Olè</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Candeggina">
+            <div class="product-name">Candeggina</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Ammoniaca">
+            <div class="product-name">Ammoniaca</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Rio Azzurro">
+            <div class="product-name">Rio Azzurro</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Detersivo lavatrice">
+            <div class="product-name">Detersivo lavatrice</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Avio">
+            <div class="product-name">Avio</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Sacchi gialli">
+            <div class="product-name">Sacchi gialli</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Sacchi grigi">
+            <div class="product-name">Sacchi grigi</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Sacchetti piccoli cestini">
+            <div class="product-name">Sacchetti piccoli cestini</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Sapone liquido mani">
+            <div class="product-name">Sapone liquido mani</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Tovagliette mani">
+            <div class="product-name">Tovagliette mani</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Carta igienica">
+            <div class="product-name">Carta igienica</div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="product-row" data-po-item="Altro">
+            <div>
+              <div class="product-name">Altro</div>
+              <input id="poOtherName" class="input" type="text" placeholder="Scrivi il prodotto..." />
+            </div>
+            <input class="input product-qty" data-po-qty type="number" min="0" step="1" value="0" />
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top:10px;">
+          <button class="btn small" type="button" id="poClearCartBtn">Azzera quantità</button>
+          <button class="btn small" type="button" id="poFill1Btn">Metti 1 ai visibili</button>
+        </div>
+
+        <button class="btn" type="submit" id="poSendBtn">Invia richiesta</button>
+        <p id="poMsg" class="msg"></p>
+      </form>
+
+      <p class="muted" style="margin-top:10px;">
+        Dopo l’invio, trovi tutto in <strong>Archivio</strong> (sezione Prodotti).
+      </p>
+    </section>
+  </main>
+
+  <!-- Export libs -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="js/export.js"></script>
+
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/guard.js"></script>
+  <script src="js/employee.js"></script>
+  <script>
+    requireRole("employee");
+  </script>
+</body>
+</html>
+

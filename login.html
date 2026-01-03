@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CAME - Login</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <h1>CAME</h1>
+    <p class="muted">Accedi come dipendente o amministratore</p>
+
+    <label class="label">Seleziona</label>
+    <select id="roleHint" class="input">
+      <option value="employee">Dipendente</option>
+      <option value="admin">Amministratore</option>
+    </select>
+
+    <label class="label">Email</label>
+    <input id="email" class="input" type="email" placeholder="nome@email.it" />
+
+    <label class="label">Password</label>
+    <input id="password" class="input" type="password" placeholder="••••••••" />
+
+    <button id="loginBtn" class="btn">Accedi</button>
+
+    <p id="msg" class="msg"></p>
+  </main>
+
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
+

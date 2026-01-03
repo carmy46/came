@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CAME – Admin</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="page-admin">
+  <header class="topbar">
+    <div class="topbar-left">
+      <h2>CAME – Amministratore</h2>
+      <div class="topbar-sub">Dashboard Pro</div>
+    </div>
+    <div class="topbar-actions">
+      <button id="logoutBtn" class="btn small">Logout</button>
+    </div>
+  </header>
+
+  <main class="admin-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">Dipendenti</div>
+      <button class="nav-btn active" data-view="hours" style="display:none;">Ore</button>
+      <button class="nav-btn" data-view="requests" style="display:none;">Richieste</button>
+      <button class="nav-btn" data-view="products">Prodotti</button>
+
+      <!-- Dipendenti (spostato in sidebar per semplificare la pagina) -->
+      <div id="adminEmployeesBar" class="card admin-employees-bar">
+        <div class="admin-employees-bar-head">
+          <div>
+            <div style="font-weight:900;">Dipendenti</div>
+            <div id="adminEmployeesCount" class="muted" style="margin:4px 0 0;">—</div>
+          </div>
+          <div>
+            <label class="label" style="margin-top:0;">Cerca</label>
+            <input id="adminEmployeesSearch" class="input" type="text" placeholder="Es. Mario" />
+          </div>
+        </div>
+        <div id="adminEmployeesChips" class="chips">Caricamento...</div>
+      </div>
+    </aside>
+
+    <section class="content">
+      <!-- Vista iniziale (soluzione B): scegli un dipendente -->
+      <div id="view-pick" class="view active">
+        <h3>Seleziona un dipendente</h3>
+        <div class="card">
+          <p class="muted" style="margin:0;">
+            Scegli un nome nella colonna a sinistra per vedere <strong>Ore</strong> e <strong>Richieste</strong> di quella persona.
+          </p>
+          <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button id="openProductsBtn" class="btn" type="button">Apri Prodotti (dashboard)</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-hours" class="view">
+        <div class="view-head">
+          <h3>Registrazioni ore</h3>
+          <button class="btn small" type="button" data-admin-back>← Torna indietro</button>
+        </div>
+
+        <div class="filters card">
+          <div>
+            <label class="label">Mese</label>
+            <input class="input" type="month" id="adminMonthPicker" />
+          </div>
+
+          <div class="stats">
+            <div class="stat">
+              <div class="muted">Totale mese (tutti)</div>
+              <div id="adminMonthTotal" class="statValue">—</div>
+            </div>
+            <div class="stat">
+              <div class="muted">Totale oggi (tutti)</div>
+              <div id="adminTodayTotal" class="statValue">—</div>
+            </div>
+          </div>
+
+          <button id="adminExportXlsxBtn" class="btn small" type="button">Export Excel (mese)</button>
+        </div>
+
+        <div class="admin-hours-tools">
+          <button id="adminHoursExpandAllBtn" class="btn small" type="button">Apri tutti</button>
+          <button id="adminHoursCollapseAllBtn" class="btn small" type="button">Chiudi tutti</button>
+        </div>
+
+        <div class="table-head admin-table-head hours" aria-hidden="true">
+          <div>Data / Orari</div>
+          <div>Luogo / Attività</div>
+          <div style="text-align:right;">Totale ore</div>
+        </div>
+        <div id="hoursList">Caricamento...</div>
+      </div>
+
+      <div id="view-requests" class="view">
+        <div class="view-head">
+          <h3>Richieste</h3>
+          <button class="btn small" type="button" data-admin-back>← Torna indietro</button>
+        </div>
+
+        <details class="admin-filters-toggle" open>
+          <summary>Filtri richieste</summary>
+          <div class="filters card" style="margin-bottom:12px;">
+          <div class="grid2" style="margin-top:0;">
+            <div>
+              <label class="label">Stato</label>
+              <select id="reqFilterStatus" class="input">
+                <option value="">Tutti</option>
+                <option value="inviata">Inviata</option>
+                <option value="approvata">Approvata</option>
+                <option value="rifiutata">Rifiutata</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Tipo</label>
+              <select id="reqFilterType" class="input">
+                <option value="">Tutti</option>
+                <option value="ferie">Ferie</option>
+                <option value="permesso_giornaliero">Permesso giornaliero</option>
+                <option value="entrata_anticipata">Entrata anticipata</option>
+                <option value="entrata_posticipata">Entrata posticipata</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div>
+              <label class="label">Mese (data richiesta)</label>
+              <input id="reqFilterMonth" class="input" type="month" />
+            </div>
+            <div>
+              <label class="label">Cerca dipendente (nome)</label>
+              <input id="reqFilterEmployee" class="input" type="text" placeholder="Es. Mario" />
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <button id="reqFiltersReset" class="btn small" type="button">Reset filtri</button>
+            <button id="reqFiltersApply" class="btn small" type="button">Applica</button>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <button id="adminReqExportXlsxBtn" class="btn small" type="button">Export Excel</button>
+            <div></div>
+          </div>
+
+          <p class="muted" style="margin-top:10px;" id="reqFiltersInfo"></p>
+          </div>
+        </details>
+
+        <div class="admin-hours-tools">
+          <button id="adminReqExpandAllBtn" class="btn small" type="button">Apri tutti</button>
+          <button id="adminReqCollapseAllBtn" class="btn small" type="button">Chiudi tutti</button>
+        </div>
+
+        <div class="table-head admin-table-head requests" aria-hidden="true">
+          <div>Dipendente / Tipo</div>
+          <div>Quando / Nota</div>
+          <div style="text-align:right;">Stato / Azioni</div>
+        </div>
+        <div id="requestsList">Caricamento...</div>
+      </div>
+
+      <div id="view-products" class="view">
+        <div class="view-head">
+          <h3>Prodotti</h3>
+          <button class="btn small" type="button" data-admin-back>← Torna indietro</button>
+        </div>
+
+        <details class="admin-filters-toggle" open>
+          <summary>Filtri prodotti</summary>
+          <div class="filters card" style="margin-bottom:12px;">
+          <div class="grid2" style="margin-top:0;">
+            <div>
+              <label class="label">Mese (data ordine)</label>
+              <input id="poFilterMonth" class="input" type="month" />
+            </div>
+            <div>
+              <label class="label">Cerca dipendente (nome)</label>
+              <input id="poFilterEmployee" class="input" type="text" placeholder="Es. Mario" />
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <div>
+              <label class="label">Cerca luogo</label>
+              <input id="poFilterPlace" class="input" type="text" placeholder="Es. B&B..." />
+            </div>
+            <div>
+              <label class="label">Cerca prodotto</label>
+              <input id="poFilterProduct" class="input" type="text" placeholder="Es. Carta..." />
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <button id="poFiltersReset" class="btn small" type="button">Reset filtri</button>
+            <button id="poFiltersApply" class="btn small" type="button">Applica</button>
+          </div>
+
+          <div class="grid2" style="margin-top:10px;">
+            <button id="adminProdExportXlsxBtn" class="btn small" type="button">Export Excel</button>
+            <div></div>
+          </div>
+
+          <p class="muted" style="margin-top:10px;" id="poFiltersInfo"></p>
+          </div>
+        </details>
+
+        <div class="admin-hours-tools">
+          <button id="adminProdExpandAllBtn" class="btn small" type="button">Apri tutti</button>
+          <button id="adminProdCollapseAllBtn" class="btn small" type="button">Chiudi tutti</button>
+        </div>
+
+        <div class="table-head admin-table-head products" aria-hidden="true">
+          <div>Dipendente / Data / Luogo</div>
+          <div>Dettaglio</div>
+          <div style="text-align:right;">Consegna</div>
+        </div>
+        <div id="productsList">Caricamento...</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Scheda dipendente (modale) -->
+  <div id="adminEmployeeModal" class="modal as-page" aria-hidden="true">
+    <div class="modal-backdrop" data-emp-modal-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Scheda dipendente">
+      <div class="modal-head">
+        <div>
+          <div class="muted" style="margin:0;">Scheda dipendente</div>
+          <div id="adminEmpModalName" style="font-weight:900; font-size:16px; margin-top:2px;">—</div>
+        </div>
+        <button class="btn small" type="button" data-emp-modal-close>Cambia dipendente</button>
+      </div>
+
+      <div class="tabs" style="top: 0; position: static; margin: 10px 0 12px;">
+        <button class="tab active" type="button" data-emp-tab="hours">Ore</button>
+        <button class="tab" type="button" data-emp-tab="requests">Richieste</button>
+      </div>
+
+      <!-- ORE -->
+      <div id="emp-tab-hours" class="emp-tab active">
+        <div class="filters card" style="margin-bottom:12px;">
+          <div>
+            <label class="label">Mese</label>
+            <input class="input" type="month" id="empHoursMonth" />
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <div class="muted">Totale mese</div>
+              <div id="empHoursMonthTotal" class="statValue">—</div>
+            </div>
+          </div>
+          <button id="empHoursExportXlsxBtn" class="btn small" type="button">Export Excel</button>
+        </div>
+        <div class="table-head admin-table-head hours" aria-hidden="true">
+          <div>Data / Orari</div>
+          <div>Luogo / Attività</div>
+          <div style="text-align:right;">Totale ore</div>
+        </div>
+        <div id="empHoursList">—</div>
+      </div>
+
+      <!-- RICHIESTE -->
+      <div id="emp-tab-requests" class="emp-tab">
+        <div class="filters card" style="margin-bottom:12px;">
+          <div class="grid2" style="margin-top:0;">
+            <div>
+              <label class="label">Stato</label>
+              <select id="empReqStatus" class="input">
+                <option value="">Tutti</option>
+                <option value="inviata">Inviata</option>
+                <option value="approvata">Approvata</option>
+                <option value="rifiutata">Rifiutata</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Tipo</label>
+              <select id="empReqType" class="input">
+                <option value="">Tutti</option>
+                <option value="ferie">Ferie</option>
+                <option value="permesso_giornaliero">Permesso giornaliero</option>
+                <option value="entrata_anticipata">Entrata anticipata</option>
+                <option value="entrata_posticipata">Entrata posticipata</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid2" style="margin-top:10px;">
+            <div>
+              <label class="label">Mese (data richiesta)</label>
+              <input id="empReqMonth" class="input" type="month" />
+            </div>
+            <div></div>
+          </div>
+          <div class="grid2" style="margin-top:10px;">
+            <button id="empReqReset" class="btn small" type="button">Reset</button>
+            <button id="empReqApply" class="btn small" type="button">Applica</button>
+          </div>
+          <p class="muted" style="margin-top:10px;" id="empReqInfo"></p>
+        </div>
+        <div class="table-head admin-table-head requests" aria-hidden="true">
+          <div>Tipo</div>
+          <div>Quando / Nota</div>
+          <div style="text-align:right;">Stato</div>
+        </div>
+        <div id="empRequestsList">—</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Export libs -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="js/export.js"></script>
+
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/guard.js"></script>
+  <script src="js/admin.js"></script>
+  <script>
+    requireRole("admin");
+  </script>
+</body>
+</html>
+

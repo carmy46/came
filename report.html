@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CAME – Report progetto (PDF)</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- PDF libs -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body class="auth-page">
+  <main class="auth-card">
+    <h1>Report progetto</h1>
+    <p class="muted">
+      Premi il bottone per scaricare un PDF con tutta la documentazione del progetto CAME (frontend + Supabase).
+    </p>
+
+    <button id="downloadPdfBtn" class="btn" type="button">Scarica PDF</button>
+    <p id="msg" class="msg"></p>
+  </main>
+
+  <script src="js/projectReport.js"></script>
+</body>
+</html>
+
+
