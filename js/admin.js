@@ -402,71 +402,74 @@ adminEmployeesSearchEl?.addEventListener("input", () => {
 
 async function loadHours() {
   const hoursList = document.getElementById("hoursList");
-  hoursList.textContent = "Caricamento...";
-  adminMonthTotalEl.textContent = "—";
-  adminTodayTotalEl.textContent = "—";
+  if (!hoursList) return;
 
-  const ym = adminMonthPicker?.value || getCurrentMonthISO();
-  const start = `${ym}-01`;
-  const endDate = new Date(ym + "-01T00:00:00");
-  endDate.setMonth(endDate.getMonth() + 1);
-  endDate.setDate(0);
-  const end = `${ym}-${String(endDate.getDate()).padStart(2, "0")}`;
+  try {
+    hoursList.textContent = "Caricamento...";
+    if (adminMonthTotalEl) adminMonthTotalEl.textContent = "—";
+    if (adminTodayTotalEl) adminTodayTotalEl.textContent = "—";
 
-  const { data, error } = await supabaseClient
-    .from("work_logs")
-    .select(`
-      id,
-      user_id,
-      work_date,
-      start_time,
-      end_time,
-      break_start,
-      break_end,
-      location,
-      activity,
-      created_at,
-      profiles ( id, full_name )
-    `)
-    .gte("work_date", start)
-    .lte("work_date", end)
-    .order("work_date", { ascending: false })
-    .order("created_at", { ascending: false });
+    const ym = adminMonthPicker?.value || getCurrentMonthISO();
+    const start = `${ym}-01`;
+    const endDate = new Date(ym + "-01T00:00:00");
+    endDate.setMonth(endDate.getMonth() + 1);
+    endDate.setDate(0);
+    const end = `${ym}-${String(endDate.getDate()).padStart(2, "0")}`;
 
-  if (error) {
-    console.error(error);
-    hoursList.textContent = "Errore caricamento";
-    adminCurrentMonthRows = [];
-    return;
-  }
+    const { data, error } = await supabaseClient
+      .from("work_logs")
+      .select(`
+        id,
+        user_id,
+        work_date,
+        start_time,
+        end_time,
+        break_start,
+        break_end,
+        location,
+        activity,
+        created_at,
+        profiles ( id, full_name )
+      `)
+      .gte("work_date", start)
+      .lte("work_date", end)
+      .order("work_date", { ascending: false })
+      .order("created_at", { ascending: false });
 
-  if (!data || data.length === 0) {
-    hoursList.textContent = "Nessuna registrazione in questo mese.";
-    adminCurrentMonthRows = [];
-    return;
-  }
+    if (error) {
+      console.error(error);
+      hoursList.textContent = "Errore caricamento";
+      adminCurrentMonthRows = [];
+      return;
+    }
 
-  adminCurrentMonthRows = data || [];
+    if (!data || data.length === 0) {
+      hoursList.textContent = "Nessuna registrazione in questo mese.";
+      adminCurrentMonthRows = [];
+      return;
+    }
 
-  const todayISO = getTodayISO();
+    adminCurrentMonthRows = data || [];
 
-  let monthMin = 0;
-  let todayMin = 0;
+    const todayISO = getTodayISO();
 
-  const grouped = new Map(); // date -> { totalMin, rows[] }
-  for (const r of data) {
-    const nm = netMinutes(r);
-    monthMin += nm;
-    if (r.work_date === todayISO) todayMin += nm;
+    let monthMin = 0;
+    let todayMin = 0;
 
-    const g = grouped.get(r.work_date) || { totalMin: 0, rows: [] };
-    g.totalMin += nm;
-    g.rows.push(r);
-    grouped.set(r.work_date, g);
-  }
+    const grouped = new Map(); // date -> { totalMin, rows[] }
+    for (const r of data) {
+      const nm = netMinutes(r);
+      monthMin += nm;
+      if (r.work_date === todayISO) todayMin += nm;
 
-  adminMonthTotalEl.textContent = formatHM(monthMin);
-  adminTodayTotalEl.textContent = formatHM(todayMin);
+      const g = grouped.get(r.work_date) || { totalMin: 0, rows: [] };
+      g.totalMin += nm;
+      g.rows.push(r);
+      grouped.set(r.work_date, g);
+    }
+
+    if (adminMonthTotalEl) adminMonthTotalEl.textContent = formatHM(monthMin);
+    if (adminTodayTotalEl) adminTodayTotalEl.textContent = formatHM(todayMin);
 
   // ============================
   // Raggruppa per dipendente (tutte le ore insieme)
@@ -563,7 +566,14 @@ async function loadHours() {
     });
   });
 
-  bindOpenEmployeeButtons(hoursList);
+    bindOpenEmployeeButtons(hoursList);
+  } catch (e) {
+    console.error(e);
+    hoursList.textContent = "Errore imprevisto (apri la console del browser per i dettagli).";
+    adminCurrentMonthRows = [];
+    if (adminMonthTotalEl) adminMonthTotalEl.textContent = "—";
+    if (adminTodayTotalEl) adminTodayTotalEl.textContent = "—";
+  }
 }
 
 // Soluzione B: in Admin si parte scegliendo un dipendente (niente caricamento globale automatico)
@@ -610,12 +620,13 @@ loadEmployees();
 })();
 
 function escapeHtml(str) {
+  // Compatibilità: evita String.prototype.replaceAll (non supportato su alcuni browser)
   return String(str || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll("\"", "&quot;")
-    .replaceAll("'", "&#039;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function labelRequestType(t) {
@@ -1038,7 +1049,7 @@ async function loadRequests() {
           const actions =
             r.status === "inviata"
               ? `
-                  <span style="display:inline-flex; gap:8px; justify-content:flex-end;">
+                  <span class="req-actions">
                     <button class="btn small" data-req-action="approve" data-req-id="${r.id}">Approva</button>
                     <button class="btn small" data-req-action="reject" data-req-id="${r.id}" style="border-color: rgba(255,107,107,.35);">Rifiuta</button>
                   </span>
@@ -1333,7 +1344,7 @@ async function loadEmpRequests() {
         const actions =
           r.status === "inviata"
             ? `
-                <span style="display:inline-flex; gap:8px; justify-content:flex-end;">
+                <span class="req-actions">
                   <button class="btn small" data-emp-req-action="approve" data-req-id="${r.id}">Approva</button>
                   <button class="btn small" data-emp-req-action="reject" data-req-id="${r.id}" style="border-color: rgba(255,107,107,.35);">Rifiuta</button>
                 </span>

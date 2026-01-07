@@ -515,20 +515,24 @@ async function loadHomeSummary() {
     mEndDate.setDate(0);
     const mEnd = `${ym}-${String(mEndDate.getDate()).padStart(2, "0")}`;
 
+    // Filtra sempre per user_id: riduce carico e dipendenza dalle policy RLS
     const pWorkWeek = supabaseClient
       .from("work_logs")
       .select("work_date,start_time,end_time,break_start,break_end")
+      .eq("user_id", user.id)
       .gte("work_date", weekStart)
       .lte("work_date", weekEnd);
 
     const pReqPending = supabaseClient
       .from("requests")
       .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
       .eq("status", "inviata");
 
     const pReqApproved = supabaseClient
       .from("requests")
       .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
       .eq("status", "approvata")
       .gte("start_date", mStart)
       .lte("start_date", mEnd);
@@ -536,6 +540,7 @@ async function loadHomeSummary() {
     const pPoOpen = supabaseClient
       .from("product_orders")
       .select("order_date,place,delivery_date")
+      .eq("user_id", user.id)
       .gte("order_date", mStart)
       .lte("order_date", mEnd)
       .is("delivery_date", null);
@@ -543,6 +548,7 @@ async function loadHomeSummary() {
     const pPoDelivered = supabaseClient
       .from("product_orders")
       .select("order_date,place,delivery_date")
+      .eq("user_id", user.id)
       .gte("order_date", mStart)
       .lte("order_date", mEnd)
       .not("delivery_date", "is", null);
@@ -1076,6 +1082,7 @@ async function loadProductsArchive(ym) {
     const { data, error } = await supabaseClient
       .from("product_orders")
       .select("id,order_date,delivery_date,place,product_name,quantity,created_at")
+      .eq("user_id", user.id)
       .gte("order_date", start)
       .lte("order_date", end)
       .order("order_date", { ascending: false })
@@ -1379,6 +1386,7 @@ async function loadRequestsPendingArchive(ym) {
     const { data, error } = await supabaseClient
       .from("requests")
       .select("id,type,start_date,end_date,time,status,note,created_at")
+      .eq("user_id", user.id)
       .eq("status", "inviata")
       .order("created_at", { ascending: false });
 
@@ -1605,6 +1613,7 @@ async function loadRequestsArchive(ym) {
     const { data, error } = await supabaseClient
       .from("requests")
       .select("id,type,start_date,end_date,time,status,note,created_at")
+      .eq("user_id", user.id)
       .in("status", ["approvata", "rifiutata"])
       .gte("start_date", start)
       .lte("start_date", end)
@@ -1668,12 +1677,13 @@ async function loadRequestsArchive(ym) {
 }
 
 function escapeHtml(str) {
+  // Compatibilità: evita String.prototype.replaceAll (non supportato su alcuni browser)
   return String(str || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll("\"", "&quot;")
-    .replaceAll("'", "&#039;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 const monthPicker = document.getElementById("monthPicker");
@@ -1853,6 +1863,7 @@ async function loadArchive() {
     const { data, error } = await supabaseClient
       .from("work_logs")
       .select("id,work_date,start_time,end_time,break_start,break_end,location,activity,created_at")
+      .eq("user_id", user.id)
       .gte("work_date", start)
       .lte("work_date", end)
       .order("work_date", { ascending: false })

@@ -1633,6 +1633,14 @@ body.page-admin [data-req-action="reject"]{
   border-color: rgba(255,107,107,.35) !important;
   background: rgba(255,107,107,.10);
 }
+
+/* Richieste: gruppo azioni (Approva / Rifiuta) - evita taglio e mantiene spazio tra i bottoni */
+body.page-admin .req-actions{
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
 body.page-admin [data-po-delivery-today]{
   border-color: rgba(255,255,255,.14);
   background: rgba(255,255,255,.04);
@@ -1934,7 +1942,12 @@ body.page-admin #view-products .admin-hours-tools{
   }
   body.page-admin #empRequestsList .rowItem > div:nth-child(3){
     text-align: right;
-    white-space: nowrap;
+    white-space: normal; /* evita taglio: consenti wrap */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
   }
   body.page-admin #empRequestsList .rowItem.rowGroup{
     background: rgba(255,255,255,.03);
@@ -1978,7 +1991,12 @@ body.page-admin #view-products .admin-hours-tools{
   }
   body.page-admin #view-requests .rowItem > div:nth-child(3){
     text-align: right;
-    white-space: nowrap;
+    white-space: normal; /* evita taglio: consenti wrap */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
   }
   body.page-admin #view-requests .rowItem.rowGroup{
     background: rgba(255,255,255,.03);
