@@ -214,6 +214,63 @@ Cosa fare:
 
 ---
 
+## 9.1) Eliminare account / Azzerare dati (importante)
+
+Qui sotto trovi le operazioni “forti”. Prima di farle, consiglio sempre:
+- fare **Export Excel** (da admin o da dipendente) se vuoi conservare una copia
+- essere sicuro di **quale utente** stai modificando (di solito si identifica con email in Auth e con `id` nelle tabelle)
+
+### A) Eliminare un account (impedire login)
+
+**Cosa significa**: l’utente non potrà più entrare nell’app con email/password.
+
+**Metodo più semplice (da Supabase Dashboard)**:
+1. Apri Supabase → il tuo progetto.
+2. Vai su **Authentication → Users**.
+3. Cerca l’utente (per email).
+4. Apri il menu azioni (⋯) e scegli **Delete user**.
+
+**Nota importante**: l’account è in `auth.users`. I “dati” (ore/richieste/ordini) sono nelle tabelle `work_logs`, `requests`, `product_orders`.
+Se Supabase ti blocca l’eliminazione (per vincoli/relazioni), fai prima la pulizia dati come nel punto B e poi riprova a cancellare l’utente.
+
+### B) Azzerare i dati di UN dipendente (senza cancellare l’account)
+
+**Cosa significa**: il dipendente resta in Auth e può ancora loggarsi, ma i suoi dati vengono cancellati.
+
+**Metodo semplice (Table Editor, senza SQL)**:
+1. Supabase → **Table Editor**
+2. Apri tabella `work_logs` → filtra `user_id = <ID_UTENTE>` → seleziona le righe → **Delete**
+3. Apri tabella `requests` → filtra `user_id = <ID_UTENTE>` → **Delete**
+4. Apri tabella `product_orders` → filtra `user_id = <ID_UTENTE>` → **Delete**
+
+**Come trovi l’ID utente (`user_id`)**:
+- in Supabase → **Authentication → Users**: apri l’utente e copia il suo **UUID**
+- oppure in tabella `profiles`: la colonna `id` è lo stesso UUID
+
+**(Opzionale) Azzerare anche il nome**:
+- tabella `profiles` → trova la riga con `id = <ID_UTENTE>` → imposta `full_name` vuoto (o NULL)
+
+### C) Azzerare TUTTI i dati (reset generale)
+
+Questa operazione cancella i dati per tutti gli utenti:
+- `work_logs` (ore)
+- `requests` (richieste)
+- `product_orders` (ordini)
+
+Metodo più sicuro (SQL, da admin):
+- Supabase → **SQL Editor** → esegui:
+  - `TRUNCATE TABLE public.work_logs RESTART IDENTITY;`
+  - `TRUNCATE TABLE public.requests RESTART IDENTITY;`
+  - `TRUNCATE TABLE public.product_orders RESTART IDENTITY;`
+
+> Attenzione: `TRUNCATE` elimina tutto immediatamente. Fallo solo se sei sicuro e hai esportato ciò che ti serve.
+
+### D) “Azzerare dati sul PC/telefono” (solo locale)
+
+Se invece intendi solo “pulire” la sessione sul dispositivo (senza toccare i dati su Supabase):
+- fai **Logout** dall’app
+- se vuoi essere certo al 100%: nel browser cancella i **dati del sito** (cache/storage) per il dominio dove apri l’app, oppure usa una finestra **In incognito**
+
 ## 10) Se vuoi: checklist finale “pronto al lancio”
 
 - Almeno **1 admin** in `profiles`

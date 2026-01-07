@@ -149,7 +149,7 @@ function attachAutocomplete({ inputEl, listId, menuEl }) {
     const matches = (q
       ? all.filter(v => v.toLowerCase().includes(q))
       : all
-    ).slice(0, 14);
+    );
 
     if (matches.length === 0) {
       menuEl.innerHTML = `<div class="auto-empty">Nessun risultato</div>`;

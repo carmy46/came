@@ -680,8 +680,11 @@ ul {
   background: rgba(11, 18, 32, 0.98);
   border-radius: 14px;
   box-shadow: 0 18px 50px rgba(0,0,0,.45);
-  overflow: auto;
-  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: min(320px, 45vh);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 6px;
 }
 
