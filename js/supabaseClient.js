@@ -24,7 +24,34 @@
     if (!isConfigured()) return null;
     if (!window.supabase || typeof window.supabase.createClient !== "function") return null;
 
-    if (!_client) _client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if (!_client) {
+      // IMPORTANTE:
+      // - Usando sessionStorage, la sessione NON resta dopo chiusura scheda/finestra.
+      // - Così, se chiudi e riapri l'app, ti richiede di fare login.
+      // Nota: su alcuni browser in modalità "privata" lo storage può essere bloccato: in quel caso
+      // Supabase potrebbe non mantenere la sessione.
+      const storage =
+        (function pickStorage() {
+          try {
+            if (window.sessionStorage) return window.sessionStorage;
+          } catch (_) {}
+          try {
+            if (window.localStorage) return window.localStorage;
+          } catch (_) {}
+          return undefined;
+        })();
+
+      _client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          // Mantieni la sessione SOLO finché la scheda è aperta
+          persistSession: true,
+          storage,
+          // valori di default, ma li teniamo espliciti
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+        },
+      });
+    }
     return _client;
   }
 
