@@ -125,6 +125,7 @@ function attachAutocomplete({ inputEl, listId, menuEl }) {
   if (!inputEl || !menuEl) return;
   let values = null; // lazy
   let hideT = null;
+  let pd = null; // pointer tracking (per distinguere tap vs scroll)
 
   function ensureValues() {
     if (values) return values;
@@ -183,15 +184,49 @@ function attachAutocomplete({ inputEl, listId, menuEl }) {
     hideT = setTimeout(() => hideMenu(), 180);
   });
 
+  // Importante UX: scroll nel menu NON deve selezionare una voce.
+  // Quindi: seleziona solo se è un "tap/click" (rilascio senza trascinare).
   menuEl.addEventListener("pointerdown", (e) => {
     const btn = e.target.closest?.("[data-auto-item]");
     if (!btn) return;
-    // evita che il blur chiuda prima di settare il valore
-    e.preventDefault();
+
+    // se l'input ha appena fatto blur, non chiudere mentre interagisci col menu
+    clearTimeout(hideT);
+
+    // Su mouse: evita che il click sposti il focus (così non parte il blur dell'input)
+    if (e.pointerType === "mouse") e.preventDefault();
+
+    pd = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      moved: false,
+    };
+  });
+
+  menuEl.addEventListener("pointermove", (e) => {
+    if (!pd || pd.id !== e.pointerId) return;
+    // se stai trascinando (scroll), non considerarlo "tap"
+    if (Math.abs(e.clientX - pd.x) + Math.abs(e.clientY - pd.y) > 8) pd.moved = true;
+    clearTimeout(hideT);
+  });
+
+  menuEl.addEventListener("pointerup", (e) => {
+    if (!pd || pd.id !== e.pointerId) return;
+    const wasMoved = pd.moved;
+    pd = null;
+    if (wasMoved) return; // era uno scroll
+
+    const btn = e.target.closest?.("[data-auto-item]");
+    if (!btn) return;
     const v = btn.getAttribute("data-auto-item") || "";
     inputEl.value = v;
     hideMenu();
     inputEl.focus();
+  });
+
+  menuEl.addEventListener("pointercancel", (e) => {
+    if (pd && pd.id === e.pointerId) pd = null;
   });
 }
 
