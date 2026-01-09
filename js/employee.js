@@ -121,7 +121,7 @@ function getDatalistValues(listId) {
     .filter(Boolean);
 }
 
-function attachAutocomplete({ inputEl, listId, menuEl }) {
+function attachAutocomplete({ inputEl, listId, menuEl, onSelect }) {
   if (!inputEl || !menuEl) return;
   let values = null; // lazy
   let hideT = null;
@@ -222,7 +222,9 @@ function attachAutocomplete({ inputEl, listId, menuEl }) {
     const v = btn.getAttribute("data-auto-item") || "";
     inputEl.value = v;
     hideMenu();
-    inputEl.focus();
+    // IMPORTANT: su smartphone, forzare il focus qui può far aprire input "time" (orologio)
+    // perché il browser passa al campo successivo. Quindi NON forziamo il focus.
+    try { onSelect?.(v); } catch (_) {}
   });
 
   menuEl.addEventListener("pointercancel", (e) => {
@@ -316,11 +318,26 @@ function makeHoursRow(initial = {}) {
   try {
     const locInput = row.querySelector(`[data-field="location"]`);
     const locMenu = row.querySelector(`[data-auto-menu="placesList"]`);
-    attachAutocomplete({ inputEl: locInput, listId: "placesList", menuEl: locMenu });
+    attachAutocomplete({
+      inputEl: locInput,
+      listId: "placesList",
+      menuEl: locMenu,
+      onSelect: () => {
+        // Dopo aver scelto il luogo, porta direttamente su "Attività"
+        row.querySelector('[data-field="activity"]')?.focus?.();
+      }
+    });
 
     const actInput = row.querySelector(`[data-field="activity"]`);
     const actMenu = row.querySelector(`[data-auto-menu="activitiesList"]`);
-    attachAutocomplete({ inputEl: actInput, listId: "activitiesList", menuEl: actMenu });
+    attachAutocomplete({
+      inputEl: actInput,
+      listId: "activitiesList",
+      menuEl: actMenu,
+      // Dopo aver scelto l'attività, non forzare focus su altri campi
+      // (evita apertura automatica dell'orologio su mobile)
+      onSelect: () => {}
+    });
   } catch (e) {
     console.error(e);
   }
@@ -810,10 +827,22 @@ function startEditWorkLog(rowItemEl) {
   try {
     const locInput = editor.querySelector(`[data-e="location"]`);
     const locMenu = editor.querySelector(`[data-auto-menu="placesList"]`);
-    attachAutocomplete({ inputEl: locInput, listId: "placesList", menuEl: locMenu });
+    attachAutocomplete({
+      inputEl: locInput,
+      listId: "placesList",
+      menuEl: locMenu,
+      onSelect: () => {
+        editor.querySelector('[data-e="activity"]')?.focus?.();
+      }
+    });
     const actInput = editor.querySelector(`[data-e="activity"]`);
     const actMenu = editor.querySelector(`[data-auto-menu="activitiesList"]`);
-    attachAutocomplete({ inputEl: actInput, listId: "activitiesList", menuEl: actMenu });
+    attachAutocomplete({
+      inputEl: actInput,
+      listId: "activitiesList",
+      menuEl: actMenu,
+      onSelect: () => {}
+    });
   } catch (_) {}
 
   const msg = (t, type = "info") => {
@@ -1080,9 +1109,7 @@ function initProductsUI() {
       poClearQuantities();
       if (poSearchEl) poSearchEl.value = "";
       poApplySearch();
-
-      // Vai in archivio (sezione Prodotti)
-      await goToArchiveAndRefresh({ section: "products" });
+      // Non reindirizzare automaticamente all'Archivio: resta nella schermata corrente.
 
     } catch (err) {
       console.error(err);
@@ -1391,9 +1418,7 @@ function initRequestsUI() {
       showToast("Richiesta inviata ✅", "ok");
       reqForm.reset();
       renderReqFieldsByType();
-
-      // Vai in archivio (sezione Richieste)
-      await goToArchiveAndRefresh({ section: "requests" });
+      // Non reindirizzare automaticamente all'Archivio: resta nella schermata corrente.
 
     } catch (err) {
       console.error(err);
