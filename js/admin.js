@@ -102,6 +102,7 @@ const empReqTypeEl = document.getElementById("empReqType");
 const empReqMonthEl = document.getElementById("empReqMonth");
 const empReqResetBtn = document.getElementById("empReqReset");
 const empReqApplyBtn = document.getElementById("empReqApply");
+const empReqExportXlsxBtn = document.getElementById("empReqExportXlsxBtn");
 const empReqInfoEl = document.getElementById("empReqInfo");
 const empRequestsListEl = document.getElementById("empRequestsList");
 
@@ -333,6 +334,59 @@ empReqResetBtn?.addEventListener("click", () => {
   if (empReqTypeEl) empReqTypeEl.value = "";
   if (empReqMonthEl) empReqMonthEl.value = "";
   loadEmpRequests();
+});
+
+// ============================
+// EXPORT RICHIESTE (scheda dipendente)
+// ============================
+empReqExportXlsxBtn?.addEventListener("click", () => {
+  if (!adminEmpSelected?.id || !empReqRows || empReqRows.length === 0) {
+    alert("Nessun dato da esportare (Richieste).");
+    return;
+  }
+
+  const status = (empReqStatusEl?.value || "").trim();
+  const type = (empReqTypeEl?.value || "").trim();
+  const month = (empReqMonthEl?.value || "").trim(); // YYYY-MM
+
+  const suffix = month ? fmtMonthYear(month) : "tutte";
+  const fileSuffix = month ? fmtMonthYearFile(month) : "tutte";
+
+  const sorted = empReqRows.slice().sort((a, b) => {
+    if (a.start_date !== b.start_date) return String(a.start_date).localeCompare(String(b.start_date));
+    if (a.type !== b.type) return String(a.type).localeCompare(String(b.type));
+    return String(a.created_at || "").localeCompare(String(b.created_at || ""));
+  });
+
+  const columns = ["Data", "Tipo", "Dettaglio", "Stato", "Nota"];
+  const rows = sorted.map(r => {
+    const dettaglio =
+      r.type === "ferie"
+        ? `Dal ${formatDateIT(r.start_date)} al ${formatDateIT(r.end_date)}`
+        : (r.time ? `${formatDateIT(r.start_date)} • ${fmtTime(r.time)}` : `${formatDateIT(r.start_date)}`);
+
+    return {
+      "Data": r.start_date ? formatDateIT(r.start_date) : "",
+      "Tipo": labelRequestType(r.type),
+      "Dettaglio": dettaglio,
+      "Stato": r.status || "",
+      "Nota": (r.note || ""),
+    };
+  });
+
+  const summaryRows = [
+    { Voce: "Totale richieste", Valore: String(sorted.length) },
+    { Voce: "Filtri", Valore: [month ? `Mese=${fmtMonthYear(month)}` : null, status ? `Stato=${status}` : null, type ? `Tipo=${type}` : null].filter(Boolean).join(" • ") || "—" },
+  ];
+
+  exportToExcelElegant({
+    filename: `CAME_${adminEmpSelected.full_name}_Richieste_${fileSuffix}.xlsx`,
+    sheetName: `Richieste ${suffix}`,
+    title: `CAME – Richieste ${adminEmpSelected.full_name} (${suffix})`,
+    columns,
+    rows,
+    summary: { title: `Riepilogo Richieste ${suffix}`, rows: summaryRows }
+  });
 });
 
 async function loadEmployees() {
