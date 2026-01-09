@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CAME – Guida Dashboard Dipendente</title>
+  <style>
+    :root{
+      --ink:#0f1a2e;
+      --muted:#5b667a;
+      --line:#e6e9f0;
+      --paper:#ffffff;
+      --soft:#f6f7fb;
+      --accent:#2b6fff;
+      --accent2:#12b886;
+      --warn:#ff6b6b;
+    }
+    html,body{background:var(--paper); color:var(--ink); font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0;}
+    .page{max-width: 900px; margin: 0 auto; padding: 36px 28px 64px;}
+    h1{font-size: 28px; margin: 0 0 6px;}
+    h2{font-size: 18px; margin: 26px 0 10px; padding-top: 6px; border-top: 1px solid var(--line);}
+    h3{font-size: 15px; margin: 14px 0 6px;}
+    p{margin: 8px 0;}
+    .muted{color:var(--muted);}
+    .badge{display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius: 999px; background: var(--soft); font-size: 12px;}
+    .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600; font-size: 12px;}
+    .pill.ok{background: rgba(18,184,134,.12); color: #0a7d5c; border:1px solid rgba(18,184,134,.25);}
+    .pill.warn{background: rgba(255,107,107,.12); color: #b02a2a; border:1px solid rgba(255,107,107,.25);}
+    .card{border:1px solid var(--line); border-radius: 12px; padding: 14px 14px; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.02);}
+    .callout{border-left: 4px solid var(--accent); padding: 10px 12px; background: #f3f7ff; border-radius: 10px;}
+    .callout.ok{border-left-color: var(--accent2); background: rgba(18,184,134,.08);}
+    .callout.warn{border-left-color: var(--warn); background: rgba(255,107,107,.08);}
+    ul,ol{margin: 8px 0 8px 18px;}
+    li{margin: 6px 0;}
+    code{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; background: var(--soft); padding: 2px 6px; border-radius: 6px; border:1px solid var(--line);}
+    .toc a{color: var(--accent); text-decoration: none;}
+    .toc a:hover{text-decoration: underline;}
+    .grid{display:grid; grid-template-columns: 1fr 1fr; gap: 10px;}
+    .k{font-weight: 700;}
+    .footer{margin-top: 26px; padding-top: 12px; border-top:1px solid var(--line); font-size: 12px; color: var(--muted);}
+    figure{margin: 12px 0 18px; padding: 0;}
+    figure img{width: 100%; height: auto; border:1px solid var(--line); border-radius: 12px; background: #fff;}
+    figcaption{margin-top: 6px; font-size: 12px; color: var(--muted);}
+    @media print{
+      .page{padding: 22px 22px;}
+      a{color: inherit; text-decoration: none;}
+      .card,.callout{break-inside: avoid;}
+      h2{break-after: avoid;}
+      figure{break-inside: avoid;}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>CAME – Guida tutorial: Dashboard Dipendente</h1>
+      <p class="muted">Inserimento ore, richieste (ferie/permessi), richiesta prodotti, archivio personale ed export.</p>
+      <div class="grid" style="margin-top:12px;">
+        <div class="callout">
+          <div class="k">Suggerimento</div>
+          <div>Per tornare alla schermata principale usa <span class="badge">← Home</span> oppure clicca/tocca <span class="badge">CAME</span> in alto.</div>
+        </div>
+        <div class="callout ok">
+          <div class="k">Dove trovo lo storico?</div>
+          <div>Dopo ogni invio, tutto finisce in <span class="badge">Archivio</span> (sezioni: Ore / Richieste / Prodotti).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card toc" style="margin-top:12px;">
+      <div class="k" style="margin-bottom:6px;">Indice</div>
+      <ol>
+        <li><a href="#accesso">Accesso e profilo</a></li>
+        <li><a href="#home">Home (Dashboard)</a></li>
+        <li><a href="#ore">Ore – Registrazione ore</a></li>
+        <li><a href="#richieste">Richieste – Ferie / Permessi</a></li>
+        <li><a href="#prodotti">Prodotti – Richieste prodotti</a></li>
+        <li><a href="#archivio">Archivio personale</a></li>
+        <li><a href="#logout">Logout</a></li>
+        <li><a href="#faq">FAQ veloce</a></li>
+      </ol>
+    </div>
+
+    <h2 id="accesso">1) Accesso e profilo</h2>
+    <div class="card">
+      <ol>
+        <li>Apri <code>login.html</code>.</li>
+        <li>Inserisci <span class="k">email</span> e <span class="k">password</span> e fai login.</li>
+        <li>Se è la prima volta può comparire <span class="badge">Nome e cognome (una volta sola)</span>:
+          <ul>
+            <li>Scrivi nome e cognome (es. <em>Mario Rossi</em>)</li>
+            <li>Premi <span class="badge">Salva</span></li>
+          </ul>
+        </li>
+      </ol>
+      <p class="muted">In alto vedrai: <span class="badge">Nome • Dipendente</span>.</p>
+    </div>
+
+    <h2 id="home">2) Home (Dashboard)</h2>
+    <div class="card">
+      <p>La Home contiene 4 riquadri:</p>
+      <ul>
+        <li><span class="k">Ore</span>: riepilogo <span class="badge">Settimana</span> e <span class="badge">Oggi</span></li>
+        <li><span class="k">Richieste</span>: <span class="badge">In attesa</span> e <span class="badge">Approvate</span> (nel mese)</li>
+        <li><span class="k">Prodotti</span>: ordini <span class="badge">Da consegnare</span> e <span class="badge">Consegnati</span> (nel mese)</li>
+        <li><span class="k">Archivio</span>: consultazione storico e gestione</li>
+      </ul>
+      <p class="muted">Toccando un riquadro vai direttamente alla sezione.</p>
+      <figure>
+        <img src="img/01-home.png" alt="Schermata Home (Dashboard) dipendente" />
+        <figcaption>Schermata Home: riepilogo ore, richieste, prodotti e accesso rapido all’Archivio.</figcaption>
+      </figure>
+    </div>
+
+    <h2 id="ore">3) Ore – Registrazione ore</h2>
+    <div class="card">
+      <h3>A) Compilazione (anche più righe nello stesso giorno)</h3>
+      <ol>
+        <li>Seleziona la <span class="k">Data</span>.</li>
+        <li>Compila almeno una riga con:
+          <ul>
+            <li><span class="k">Ora inizio</span> e <span class="k">Ora fine</span></li>
+            <li><span class="k">Luogo</span> e <span class="k">Attività</span> (puoi selezionare o scrivere liberamente)</li>
+          </ul>
+        </li>
+        <li><span class="k">Pausa (opzionale)</span>:
+          <ul>
+            <li>Se la inserisci, devi compilare <span class="k">sia</span> inizio che fine pausa</li>
+            <li>La pausa deve essere <span class="k">dentro</span> l’orario di lavoro</li>
+          </ul>
+        </li>
+        <li>Se nello stesso giorno hai lavorato in più posti/attività:
+          <ul>
+            <li>premi <span class="badge">+ Aggiungi riga</span></li>
+            <li>compila le righe extra</li>
+          </ul>
+        </li>
+        <li>Premi <span class="badge">Invia</span> una sola volta.</li>
+      </ol>
+
+      <h3>B) Pulsanti utili</h3>
+      <ul>
+        <li><span class="badge">+ Aggiungi riga</span>: aggiunge una riga per lo stesso giorno.</li>
+        <li><span class="badge">Reset righe</span>: azzera tutto e ricrea una riga vuota.</li>
+      </ul>
+
+      <div class="callout warn" style="margin-top:10px;">
+        <div class="k">Errori comuni</div>
+        <ul style="margin-bottom:0;">
+          <li><span class="k">Ora fine dopo ora inizio</span>: controlla gli orari.</li>
+          <li><span class="k">Pausa</span>: compila entrambe (inizio e fine) oppure svuotale.</li>
+          <li><span class="k">Riga “mezza compilata”</span>: completa tutti i campi oppure rimuovi la riga.</li>
+        </ul>
+      </div>
+
+      <figure>
+        <img src="img/02-ore.png" alt="Schermata Registrazione ore (multi-riga)" />
+        <figcaption>Registrazione ore: puoi aggiungere più righe nello stesso giorno e inviare una sola volta.</figcaption>
+      </figure>
+    </div>
+
+    <h2 id="richieste">4) Richieste – Ferie / Permessi</h2>
+    <div class="card">
+      <h3>A) Tipi richiesta</h3>
+      <ul>
+        <li><span class="k">Ferie (da / a)</span>: inserisci <span class="badge">Da</span> e <span class="badge">A</span></li>
+        <li><span class="k">Permesso giornaliero (data)</span>: inserisci <span class="badge">Data</span></li>
+        <li><span class="k">Permesso entrata anticipata (data + ora)</span>: inserisci <span class="badge">Data</span> e <span class="badge">Ora</span></li>
+        <li><span class="k">Permesso entrata posticipata (data + ora)</span>: inserisci <span class="badge">Data</span> e <span class="badge">Ora</span></li>
+      </ul>
+      <p>Le <span class="k">Note</span> sono opzionali.</p>
+
+      <h3>B) Invio</h3>
+      <ol>
+        <li>Seleziona il tipo</li>
+        <li>Compila date/ora richieste</li>
+        <li>Premi <span class="badge">Invia richiesta</span></li>
+      </ol>
+      <p class="muted">Dopo l’invio trovi tutto in <span class="badge">Archivio → Richieste</span>.</p>
+
+      <h3>C) Modifica / Annulla richiesta (solo “Inviata / in attesa”)</h3>
+      <ul>
+        <li>Vai in <span class="badge">Archivio → Richieste</span></li>
+        <li>Sezione <span class="k">Richieste in attesa</span>:
+          <ul>
+            <li><span class="badge">Modifica</span>: correggi data/ora/note</li>
+            <li><span class="badge">Annulla</span>: elimina la richiesta (con conferma)</li>
+          </ul>
+        </li>
+      </ul>
+      <div class="callout" style="margin-top:10px;">
+        <div class="k">Nota</div>
+        <div>Le richieste <span class="pill ok">Approvate</span> o <span class="pill warn">Rifiutate</span> restano nello storico e non si modificano.</div>
+      </div>
+
+      <figure>
+        <img src="img/03-richieste.png" alt="Schermata Richieste (ferie/permessi)" />
+        <figcaption>Richieste: scegli il tipo (ferie/permessi), compila data/ora e invia. Poi trovi tutto in Archivio.</figcaption>
+      </figure>
+    </div>
+
+    <h2 id="prodotti">5) Prodotti – Richieste prodotti</h2>
+    <div class="card">
+      <h3>A) Compilazione</h3>
+      <ol>
+        <li>Seleziona <span class="k">Data</span></li>
+        <li>Inserisci <span class="k">Luogo</span></li>
+        <li>Metti la <span class="k">quantità</span> sui prodotti (0 = non richiesto)</li>
+        <li>Se usi <span class="badge">Altro</span>: scrivi anche il nome del prodotto</li>
+        <li>Premi <span class="badge">Invia richiesta</span></li>
+      </ol>
+
+      <h3>B) Strumenti veloci</h3>
+      <ul>
+        <li><span class="badge">Cerca prodotto</span>: filtra la lista (es. “carta”, “sacchi”).</li>
+        <li><span class="badge">Azzera quantità</span>: riporta tutto a 0.</li>
+        <li><span class="badge">Metti 1 ai visibili</span>: mette 1 ai prodotti filtrati.</li>
+      </ul>
+
+      <p class="muted">Dopo l’invio trovi tutto in <span class="badge">Archivio → Prodotti</span>.</p>
+
+      <h3>C) Annulla ordine (solo se non consegnato)</h3>
+      <p>In <span class="badge">Archivio → Prodotti</span>, apri l’ordine:</p>
+      <ul>
+        <li>Se è <span class="k">Non consegnato</span>, puoi usare <span class="badge">Annulla ordine</span> (annulla tutti i prodotti di quel luogo + data).</li>
+      </ul>
+
+      <figure>
+        <img src="img/04-prodotti.png" alt="Schermata Richieste prodotti" />
+        <figcaption>Prodotti: inserisci luogo e quantità (0 = non richiesto). Usa “Cerca prodotto”, “Azzera quantità” e “Metti 1 ai visibili”.</figcaption>
+      </figure>
+    </div>
+
+    <h2 id="archivio">6) Archivio personale</h2>
+    <div class="card">
+      <h3>A) Sezioni</h3>
+      <p>In alto trovi 3 schede: <span class="badge">Ore</span> <span class="badge">Richieste</span> <span class="badge">Prodotti</span>.</p>
+
+      <h3>B) Filtri mese + ricerca</h3>
+      <ul>
+        <li><span class="k">Mese</span>: scegli il mese da consultare.</li>
+        <li><span class="k">Totale mese</span> e <span class="k">Totale oggi</span>: riepiloghi rapidi.</li>
+        <li><span class="badge">Questo mese</span> / <span class="badge">Mese scorso</span>: scorciatoie.</li>
+        <li><span class="k">Cerca in archivio…</span>: cerca per luogo, attività, note, ecc.</li>
+      </ul>
+
+      <div class="callout" style="margin-top:10px;">
+        <div class="k">Su smartphone</div>
+        <div>Il blocco <span class="badge">Filtri</span> può essere “a scomparsa”. Nelle sezioni Richieste/Prodotti puoi usare <span class="badge">📅 Cambia mese</span> per tornare ai filtri.</div>
+      </div>
+
+      <h3>C) Archivio Ore: apri/chiudi e modifica</h3>
+      <ul>
+        <li>Ogni giorno è “apribile”: tocchi il giorno per vedere le righe.</li>
+        <li>Su ogni riga puoi usare <span class="badge">Modifica</span> per cambiare orari/pausa/luogo/attività.</li>
+      </ul>
+
+      <h3>D) Export (Ore)</h3>
+      <ul>
+        <li><span class="badge">Export Excel</span>: scarica <code>.xlsx</code> con dettaglio + riepilogo.</li>
+        <li><span class="badge">Export PDF</span>: scarica un PDF con dettaglio + riepilogo giornaliero.</li>
+      </ul>
+
+      <div class="callout warn" style="margin-top:10px;">
+        <div class="k">Se l’export non parte</div>
+        <ul style="margin-bottom:0;">
+          <li>Serve connessione Internet (le librerie di export vengono caricate online).</li>
+          <li>Su smartphone è meglio aprire l’app da un indirizzo <span class="k">http</span> (non da “file”).</li>
+        </ul>
+      </div>
+
+      <figure>
+        <img src="img/05-archivio.png" alt="Schermata Archivio personale (ore/filtri/export)" />
+        <figcaption>Archivio: scegli la sezione (Ore/Richieste/Prodotti), filtra per mese, cerca e usa Export Excel/PDF.</figcaption>
+      </figure>
+    </div>
+
+    <h2 id="logout">7) Logout</h2>
+    <div class="card">
+      <p>Premi <span class="badge">Logout</span> (in alto a destra).</p>
+    </div>
+
+    <h2 id="faq">FAQ veloce</h2>
+    <div class="card">
+      <p><span class="k">“Sessione scaduta. Rifai login.”</span><br/><span class="muted">Rientra da <code>login.html</code>.</span></p>
+      <p><span class="k">Non vedo suggerimenti Luogo/Attività su telefono</span><br/><span class="muted">Puoi scrivere liberamente: i suggerimenti compaiono come elenco quando tocchi il campo.</span></p>
+      <p><span class="k">Ho lasciato una riga vuota in Ore</span><br/><span class="muted">Se la riga è completamente vuota viene ignorata; se è “mezza compilata”, il sistema chiede di completarla o rimuoverla.</span></p>
+    </div>
+
+    <div class="footer">
+      Documento: <span class="k">Guida Dashboard Dipendente</span> • Progetto: CAME
+    </div>
+  </div>
+</body>
+</html>
+
+

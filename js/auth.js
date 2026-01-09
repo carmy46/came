@@ -30,7 +30,7 @@ loginBtn?.addEventListener("click", async () => {
     const password = passEl?.value || "";
 
     if (!email || !password) {
-      setMsg("Inserisci email e password.", "error");
+      setMsg("Inserisci username e password.", "error");
       return;
     }
 

@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CAME – Dipendente (Demo per screenshot)</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    /* Piccole aggiunte solo per la demo/screenshot */
+    .demo-note{margin:10px 0 0; font-size:12px; color: rgba(255,255,255,.75)}
+    .demo-pill{display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); font-size:12px;}
+  </style>
+</head>
+<body class="page-employee">
+  <header class="topbar">
+    <div class="topbar-left">
+      <h2>CAME</h2>
+      <div id="topbarUser" class="topbar-sub muted">Mario Rossi • Dipendente <span class="demo-pill">DEMO</span></div>
+      <div class="demo-note">Questa pagina è solo per creare immagini della grafica nel PDF.</div>
+    </div>
+    <div class="topbar-actions">
+      <button id="homeBtn" class="btn small" type="button">← Home</button>
+      <button id="logoutBtn" class="btn small" type="button">Logout</button>
+    </div>
+  </header>
+
+  <main class="mobile-shell">
+    <!-- HOME -->
+    <section id="view-home" class="view active">
+      <h3>Dashboard</h3>
+      <p class="muted" id="homeLastRefresh">Aggiornato alle 09:15</p>
+
+      <div class="home-grid">
+        <button class="home-card home-card-mock" type="button" data-nav="hours">
+          <div class="home-card-head">
+            <div class="home-card-title">Ore</div>
+            <div class="home-card-line"></div>
+          </div>
+          <div class="home-card-body">
+            <div class="home-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="home-metrics">
+              <div class="home-metric"><strong>32h 10m</strong> <span class="muted">Settimana</span></div>
+              <div class="home-metric"><strong>6h 30m</strong> <span class="muted">Oggi</span></div>
+            </div>
+          </div>
+          <div class="home-card-cta">
+            <span>Vedi dettagli</span><span class="chev">›</span>
+          </div>
+        </button>
+
+        <button class="home-card home-card-mock" type="button" data-nav="requests">
+          <div class="home-card-head">
+            <div class="home-card-title">Richieste</div>
+            <div class="home-card-line"></div>
+          </div>
+          <div class="home-card-body">
+            <div class="home-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M7 3h7l3 3v15a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M14 3v4h4" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M8 12h8M8 16h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="home-metrics">
+              <div class="home-metric"><strong>1</strong> <span class="muted">In attesa</span></div>
+              <div class="home-metric"><strong>2</strong> <span class="muted">Approvate</span></div>
+            </div>
+          </div>
+          <div class="home-card-cta">
+            <span>Gestisci</span><span class="chev">›</span>
+          </div>
+        </button>
+
+        <button class="home-card home-card-mock" type="button" data-nav="products">
+          <div class="home-card-head">
+            <div class="home-card-title">Prodotti</div>
+            <div class="home-card-line"></div>
+          </div>
+          <div class="home-card-body">
+            <div class="home-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M21 8.5 12 13 3 8.5 12 4l9 4.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M21 8.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M12 13v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="home-metrics">
+              <div class="home-metric"><strong>1</strong> <span class="muted">Da consegnare</span></div>
+              <div class="home-metric"><strong>3</strong> <span class="muted">Consegnati</span></div>
+            </div>
+          </div>
+          <div class="home-card-cta">
+            <span>Visualizza</span><span class="chev">›</span>
+          </div>
+        </button>
+
+        <button class="home-card home-card-mock" type="button" data-nav="archive">
+          <div class="home-card-head">
+            <div class="home-card-title">Archivio</div>
+            <div class="home-card-line"></div>
+          </div>
+          <div class="home-card-body">
+            <div class="home-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="home-metrics">
+              <div class="home-metric"><strong>Documenti</strong> <span class="muted">salvati</span></div>
+              <div class="home-metric"><strong>Consulta</strong> <span class="muted">file</span></div>
+            </div>
+          </div>
+          <div class="home-card-cta">
+            <span>Apri</span><span class="chev">›</span>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- ORE -->
+    <section id="view-hours" class="view">
+      <h3>Registrazione ore</h3>
+      <form class="form-card">
+        <label class="label">Data</label>
+        <input class="input" type="date" value="2026-01-08" />
+        <p class="muted" style="margin:10px 0 0;">
+          Puoi inserire <strong>più luoghi</strong> nello stesso giorno: aggiungi più righe e premi <strong>Invia</strong> una sola volta.
+        </p>
+
+        <div class="hours-rows">
+          <div class="hours-row">
+            <div class="hours-row-head">
+              <div class="hours-row-title">Riga 1</div>
+              <button class="btn small danger" type="button">Rimuovi</button>
+            </div>
+            <div class="grid2">
+              <div><label class="label">Ora inizio</label><input class="input" type="time" value="08:30" /></div>
+              <div><label class="label">Ora fine</label><input class="input" type="time" value="12:30" /></div>
+            </div>
+            <div class="grid2">
+              <div><label class="label">Inizio pausa (opzionale)</label><input class="input" type="time" value="" /></div>
+              <div><label class="label">Fine pausa (opzionale)</label><input class="input" type="time" value="" /></div>
+            </div>
+            <label class="label">Luogo</label>
+            <input class="input" type="text" value="B&B Nicolas" />
+            <label class="label">Attività</label>
+            <input class="input" type="text" value="Pulizia" />
+          </div>
+
+          <div class="hours-row">
+            <div class="hours-row-head">
+              <div class="hours-row-title">Riga 2</div>
+              <button class="btn small danger" type="button">Rimuovi</button>
+            </div>
+            <div class="grid2">
+              <div><label class="label">Ora inizio</label><input class="input" type="time" value="13:30" /></div>
+              <div><label class="label">Ora fine</label><input class="input" type="time" value="16:00" /></div>
+            </div>
+            <div class="grid2">
+              <div><label class="label">Inizio pausa (opzionale)</label><input class="input" type="time" value="14:30" /></div>
+              <div><label class="label">Fine pausa (opzionale)</label><input class="input" type="time" value="14:45" /></div>
+            </div>
+            <label class="label">Luogo</label>
+            <input class="input" type="text" value="Magazzino" />
+            <label class="label">Attività</label>
+            <input class="input" type="text" value="Sgombero" />
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top:10px;">
+          <button class="btn small" type="button">+ Aggiungi riga</button>
+          <button class="btn small" type="button">Reset righe</button>
+        </div>
+        <button class="btn" type="button">Invia</button>
+        <p class="msg ok">Esempio: Inviato ✅ (2 righe, totale 6h 15m)</p>
+      </form>
+    </section>
+
+    <!-- RICHIESTE -->
+    <section id="view-requests" class="view">
+      <h3>Richieste</h3>
+      <form class="form-card">
+        <label class="label">Tipo richiesta</label>
+        <select class="input">
+          <option>Seleziona...</option>
+          <option selected>Ferie (da / a)</option>
+        </select>
+        <div class="grid2" style="margin-top:10px;">
+          <div><label class="label">Da (data inizio)</label><input class="input" type="date" value="2026-01-20" /></div>
+          <div><label class="label">A (data fine)</label><input class="input" type="date" value="2026-01-22" /></div>
+        </div>
+        <label class="label" style="margin-top:10px;">Note (opzionale)</label>
+        <textarea class="input" rows="3">Visita medica / impegno personale</textarea>
+        <button class="btn" type="button">Invia richiesta</button>
+        <p class="msg ok">Esempio: Richiesta inviata ✅</p>
+      </form>
+      <p class="muted" style="margin-top:10px;">Dopo l’invio, trovi tutto in <strong>Archivio</strong> (sezione Richieste).</p>
+    </section>
+
+    <!-- PRODOTTI -->
+    <section id="view-products" class="view">
+      <h3>Richieste prodotti</h3>
+      <form class="form-card">
+        <label class="label">Data</label>
+        <input class="input" type="date" value="2026-01-08" />
+        <label class="label">Luogo</label>
+        <input class="input" type="text" value="B&B Nicolas" />
+        <label class="label">Prodotti (metti la quantità)</label>
+        <input class="input" type="text" value="carta" />
+
+        <div class="product-cart" style="margin-top:10px;">
+          <div class="product-row" style="display:grid;">
+            <div class="product-name">Carta igienica</div>
+            <input class="input product-qty" type="number" min="0" step="1" value="6" />
+          </div>
+          <div class="product-row" style="display:grid;">
+            <div class="product-name">Sacchi grigi</div>
+            <input class="input product-qty" type="number" min="0" step="1" value="2" />
+          </div>
+          <div class="product-row" style="display:grid;">
+            <div>
+              <div class="product-name">Altro</div>
+              <input class="input" type="text" value="Spugne" />
+            </div>
+            <input class="input product-qty" type="number" min="0" step="1" value="4" />
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top:10px;">
+          <button class="btn small" type="button">Azzera quantità</button>
+          <button class="btn small" type="button">Metti 1 ai visibili</button>
+        </div>
+        <button class="btn" type="button">Invia richiesta</button>
+        <p class="msg ok">Esempio: Richiesta inviata ✅ (3 prodotti, 12 pezzi)</p>
+      </form>
+      <p class="muted" style="margin-top:10px;">Dopo l’invio, trovi tutto in <strong>Archivio</strong> (sezione Prodotti).</p>
+    </section>
+
+    <!-- ARCHIVIO -->
+    <section id="view-archive" class="view">
+      <h3>Archivio personale</h3>
+      <div class="archive-wrap">
+        <div class="archive-shell">
+          <div class="archive-topbar">
+            <div class="card archive-nav">
+              <div class="archive-nav-title">Sezioni</div>
+              <div class="archive-cards">
+                <button class="archive-card active" type="button" data-archive="hours">
+                  <div class="archive-card-row"><div class="archive-card-title">Ore</div><span class="badge">38h 00m</span></div>
+                  <div class="archive-card-sub">Archivio ore</div>
+                </button>
+                <button class="archive-card" type="button" data-archive="requests">
+                  <div class="archive-card-row"><div class="archive-card-title">Richieste</div><span class="badge">1</span></div>
+                  <div class="archive-card-sub">In attesa / esito</div>
+                </button>
+                <button class="archive-card" type="button" data-archive="products">
+                  <div class="archive-card-row"><div class="archive-card-title">Prodotti</div><span class="badge">2</span></div>
+                  <div class="archive-card-sub">Ordini + consegna</div>
+                </button>
+              </div>
+            </div>
+
+            <div class="filters card" style="min-width: 0;">
+              <details class="archive-filters-toggle" open>
+                <summary>
+                  <span>Filtri</span>
+                  <strong>gennaio 2026</strong>
+                </summary>
+                <div class="archive-filters-body">
+                  <details class="month-toggle" open>
+                    <summary><span class="muted">Mese</span><strong>gennaio 2026</strong></summary>
+                    <div style="margin-top:10px;"><input class="input" type="month" value="2026-01" /></div>
+                  </details>
+                  <div class="archive-stats-inline">
+                    <div class="statPill"><div class="muted">Totale mese</div><div class="statValue">38h 00m</div></div>
+                    <div class="statPill"><div class="muted">Totale oggi</div><div class="statValue">6h 30m</div></div>
+                  </div>
+                  <div class="archive-more">
+                    <div class="grid2 archive-actions">
+                      <button class="btn small" type="button">Export Excel</button>
+                      <button class="btn small" type="button">Export PDF</button>
+                    </div>
+                    <div class="archive-toolbar">
+                      <input class="input" type="text" value="cerca..." />
+                      <div class="chips">
+                        <button class="chip" type="button">Questo mese</button>
+                        <button class="chip" type="button">Mese scorso</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <section class="archive-main">
+            <div class="archive-sections">
+              <div class="archive-section active">
+                <div class="archive-section-head">
+                  <div class="archive-section-title">Ore</div>
+                  <div class="archive-section-sub muted">Riepilogo per giorno (apri/chiudi)</div>
+                </div>
+                <div class="acc open">
+                  <div class="acc-head">
+                    <div>
+                      <div class="acc-title">08/01/2026</div>
+                      <div class="acc-meta">Totale giorno: 6h 30m</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <span class="pill">6h 30m</span>
+                      <span class="acc-chev">▾</span>
+                    </div>
+                  </div>
+                  <div class="acc-body">
+                    <div class="rowItem">
+                      <div class="rowItemHead">
+                        <div>
+                          <div><strong>08:30 - 12:30</strong></div>
+                          <div class="muted">B&B Nicolas — Pulizia</div>
+                          <div class="muted">Netto: 4h 00m</div>
+                        </div>
+                        <div class="rowActions"><button class="btn small" type="button">Modifica</button></div>
+                      </div>
+                    </div>
+                    <div class="rowItem">
+                      <div class="rowItemHead">
+                        <div>
+                          <div><strong>13:30 - 16:00</strong> (pausa 14:30-14:45)</div>
+                          <div class="muted">Magazzino — Sgombero</div>
+                          <div class="muted">Netto: 2h 15m</div>
+                        </div>
+                        <div class="rowActions"><button class="btn small" type="button">Modifica</button></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const map = {
+        "#home": "home",
+        "#ore": "hours",
+        "#hours": "hours",
+        "#richieste": "requests",
+        "#requests": "requests",
+        "#prodotti": "products",
+        "#products": "products",
+        "#archivio": "archive",
+        "#archive": "archive",
+      };
+
+      function setActive(view) {
+        document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+        const el = document.getElementById(`view-${view}`);
+        if (el) el.classList.add("active");
+      }
+
+      function goFromHash() {
+        const h = (location.hash || "#home").toLowerCase();
+        setActive(map[h] || "home");
+        try { window.scrollTo(0,0); } catch (_) {}
+      }
+
+      document.getElementById("homeBtn")?.addEventListener("click", () => {
+        location.hash = "#home";
+      });
+      document.querySelectorAll("[data-nav]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const v = btn.getAttribute("data-nav");
+          location.hash = "#" + v;
+        });
+      });
+
+      window.addEventListener("hashchange", goFromHash);
+      goFromHash();
+    })();
+  </script>
+</body>
+</html>
+
