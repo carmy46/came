@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CAME – Dipendente</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#6ea8fe" />
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 
@@ -520,6 +522,15 @@
   <script src="js/employee.js"></script>
   <script>
     requireRole("employee");
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('Service Worker registrato:', reg.scope))
+          .catch(err => console.error('Errore registrazione SW:', err));
+      });
+    }
   </script>
 </body>
 </html>

@@ -6,9 +6,20 @@
     <title>CAME</title>
     <meta http-equiv="refresh" content="0; url=login.html" />
     <link rel="canonical" href="login.html" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#6ea8fe" />
   </head>
   <body>
     <p>Reindirizzamento in corso… Se non succede nulla, apri <a href="login.html">login.html</a>.</p>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('Service Worker registrato:', reg.scope))
+            .catch(err => console.error('Errore registrazione SW:', err));
+        });
+      }
+    </script>
   </body>
 </html>
 
