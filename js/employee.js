@@ -28,6 +28,7 @@ const homePoOpenEl = document.getElementById("homePoOpen");
 const homePoDeliveredEl = document.getElementById("homePoDelivered");
 
 function setMsg(text, type = "info") {
+  if (!msgEl) return;
   msgEl.textContent = text;
   msgEl.className = `msg ${type}`;
 }
@@ -82,7 +83,9 @@ function validateWorkLogLike({ start_time, end_time, break_start, break_end }, p
 }
 
 function formatDateIT(dateStr) {
+  if (!dateStr) return "—";
   const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d.getTime())) return String(dateStr);
   return new Intl.DateTimeFormat("it-IT").format(d);
 }
 
@@ -398,7 +401,9 @@ function getCurrentMonthISO() {
 
 // --- Logout ---
 logoutBtn.addEventListener("click", async () => {
-  await supabaseClient.auth.signOut();
+  try { await supabaseClient.auth.signOut(); } catch (_) {}
+  try { sessionStorage.clear(); } catch (_) {}
+  try { localStorage.clear(); } catch (_) {}
   window.location.replace("login.html");
 });
 

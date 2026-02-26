@@ -1,4 +1,4 @@
-const CACHE_NAME = 'came-v1';
+const CACHE_NAME = 'came-v2';
 const STATIC_CACHE = [
   '/',
   '/index.html',
@@ -51,23 +51,9 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Network First per API Supabase (sempre dati freschi)
+  // Network Only per API Supabase: mai cachare dati sensibili
   if (url.hostname.includes('supabase.co')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // Clona la risposta per metterla in cache
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
-          });
-          return response;
-        })
-        .catch(() => {
-          // Fallback alla cache se offline
-          return caches.match(request);
-        })
-    );
+    event.respondWith(fetch(request));
     return;
   }
 

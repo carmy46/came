@@ -109,7 +109,9 @@ const empRequestsListEl = document.getElementById("empRequestsList");
 const openProductsBtn = document.getElementById("openProductsBtn");
 
 logoutBtn?.addEventListener("click", async () => {
-  await window.supabaseClient.auth.signOut();
+  try { await window.supabaseClient.auth.signOut(); } catch (_) {}
+  try { sessionStorage.clear(); } catch (_) {}
+  try { localStorage.clear(); } catch (_) {}
   window.location.replace("login.html");
 });
 

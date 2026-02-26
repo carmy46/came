@@ -59,7 +59,7 @@
     const client = getClient();
     if (!client) return null;
     const { data, error } = await client.auth.getUser();
-    if (error) throw error;
+    if (error) return null;
     return data.user;
   }
 
