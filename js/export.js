@@ -331,6 +331,83 @@ function exportToExcelElegant({
   downloadBlob(blob, safeFilename(filename));
 }
 
+// ---------- MULTI-SHEET: un foglio per ogni dipendente ----------
+function exportToExcelMultiSheet({ filename = "export.xlsx", sheets = [] }) {
+  if (!window.XLSX) throw new Error("XLSX non disponibile (CDN non caricato).");
+
+  const XLSX = window.XLSX;
+  const wb = XLSX.utils.book_new();
+
+  for (const sheet of sheets) {
+    const { sheetName = "Dati", title = "CAME", columns = [], rows = [] } = sheet;
+
+    let dataObjects;
+    if (rows.length === 0) dataObjects = [];
+    else if (Array.isArray(rows[0])) {
+      dataObjects = rows.map(arr => {
+        const o = {};
+        columns.forEach((k, i) => (o[k] = arr[i] ?? ""));
+        return o;
+      });
+    } else {
+      dataObjects = rows;
+    }
+
+    const ws = XLSX.utils.json_to_sheet(dataObjects, { header: columns, origin: "A3" });
+    addTitleRow(ws, title, columns.length);
+
+    const headerRange = XLSX.utils.encode_range({ s: { r: 2, c: 0 }, e: { r: 2, c: columns.length - 1 } });
+    setRangeStyle(ws, headerRange, {
+      font: { bold: true, color: { rgb: "FFFFFF" } },
+      alignment: { horizontal: "center", vertical: "center" },
+      fill: { fgColor: { rgb: "1A2F55" } },
+      border: {
+        top: { style: "thin", color: { rgb: "334155" } },
+        bottom: { style: "thin", color: { rgb: "334155" } },
+        left: { style: "thin", color: { rgb: "334155" } },
+        right: { style: "thin", color: { rgb: "334155" } },
+      },
+    });
+
+    const bodyStartRow = 3;
+    const lastRow = bodyStartRow + Math.max(0, dataObjects.length - 1);
+    const bodyRange = XLSX.utils.encode_range({
+      s: { r: bodyStartRow, c: 0 },
+      e: { r: Math.max(bodyStartRow, lastRow), c: columns.length - 1 }
+    });
+    setRangeStyle(ws, bodyRange, {
+      alignment: { vertical: "top", wrapText: true },
+      border: {
+        top: { style: "thin", color: { rgb: "334155" } },
+        bottom: { style: "thin", color: { rgb: "334155" } },
+        left: { style: "thin", color: { rgb: "334155" } },
+        right: { style: "thin", color: { rgb: "334155" } },
+      },
+    });
+
+    for (let r = bodyStartRow; r <= lastRow; r++) {
+      if ((r - bodyStartRow) % 2 !== 1) continue;
+      const rowRange = XLSX.utils.encode_range({ s: { r, c: 0 }, e: { r, c: columns.length - 1 } });
+      setRangeStyle(ws, rowRange, { fill: { fgColor: { rgb: "0B1730" } } });
+    }
+
+    autoFitColumns(ws, [columns, ...dataObjects.map(o => columns.map(k => o[k]))], 10, 48);
+    ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 2, c: 0 }, e: { r: 2, c: columns.length - 1 } }) };
+    ws["!freeze"] = { xSplit: 0, ySplit: 3 };
+
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(sheetName));
+  }
+
+  if (typeof XLSX.writeFile === "function") {
+    XLSX.writeFile(wb, safeFilename(filename), { bookType: "xlsx", cellStyles: true });
+    return;
+  }
+
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array", cellStyles: true });
+  const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  downloadBlob(blob, safeFilename(filename));
+}
+
 // Compatibilità: il progetto attuale usa exportToExcel({ rows, filename, sheetName })
 function exportToExcel({ rows, filename = "export.xlsx", sheetName = "Dati", title = "" }) {
   const columns = rows && rows.length ? Object.keys(rows[0]) : [];

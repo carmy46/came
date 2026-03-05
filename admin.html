@@ -56,6 +56,20 @@
             <button id="openProductsBtn" class="btn" type="button">Apri Prodotti (dashboard)</button>
           </div>
         </div>
+
+        <div class="card" style="margin-top:14px;">
+          <div style="font-weight:800; font-size:15px; margin-bottom:10px;">Export Ore – Tutti i dipendenti</div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+            <div>
+              <label class="label">Mese</label>
+              <input class="input" type="month" id="exportAllMonthPicker" />
+            </div>
+            <button id="exportAllHoursBtn" class="btn" type="button">Export Excel (tutti)</button>
+          </div>
+          <p class="muted" style="font-size:13px; margin-top:10px; margin-bottom:0;">
+            Genera un file Excel con un foglio per ogni dipendente + foglio di riepilogo generale.
+          </p>
+        </div>
       </div>
 
       <div id="view-hours" class="view">

@@ -632,6 +632,138 @@ async function loadHours() {
   }
 }
 
+// ============================
+// EXPORT ORE – TUTTI I DIPENDENTI (da view-pick)
+// ============================
+const exportAllMonthPickerEl = document.getElementById("exportAllMonthPicker");
+if (exportAllMonthPickerEl && !exportAllMonthPickerEl.value) {
+  exportAllMonthPickerEl.value = getCurrentMonthISO();
+}
+
+document.getElementById("exportAllHoursBtn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("exportAllHoursBtn");
+  const ym = (exportAllMonthPickerEl?.value || getCurrentMonthISO()).trim();
+
+  if (btn) { btn.disabled = true; btn.textContent = "Caricamento..."; }
+
+  try {
+    const start = `${ym}-01`;
+    const endDate = new Date(ym + "-01T00:00:00");
+    endDate.setMonth(endDate.getMonth() + 1);
+    endDate.setDate(0);
+    const end = `${ym}-${String(endDate.getDate()).padStart(2, "0")}`;
+
+    const { data, error } = await supabaseClient
+      .from("work_logs")
+      .select(`
+        id,
+        user_id,
+        work_date,
+        start_time,
+        end_time,
+        break_start,
+        break_end,
+        location,
+        activity,
+        created_at,
+        profiles ( id, full_name )
+      `)
+      .gte("work_date", start)
+      .lte("work_date", end)
+      .order("work_date", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+
+    const allRows = data || [];
+    if (!allRows.length) {
+      alert(`Nessuna registrazione trovata per ${fmtMonthYear(ym)}.`);
+      return;
+    }
+
+    // Raggruppa per dipendente
+    const byEmployee = new Map();
+    for (const r of allRows) {
+      const userId = r.user_id || "unknown";
+      const name = (r.profiles?.full_name || "").trim() || "Senza nome";
+      const g = byEmployee.get(userId) || { userId, full_name: name, totalMin: 0, rows: [] };
+      g.totalMin += netMinutes(r);
+      g.rows.push(r);
+      byEmployee.set(userId, g);
+    }
+
+    // Ordina per nome
+    const employees = Array.from(byEmployee.values()).sort((a, b) =>
+      String(a.full_name).localeCompare(String(b.full_name), "it", { sensitivity: "base" })
+    );
+
+    const ymLabel = fmtMonthYear(ym);
+    const ymFile = fmtMonthYearFile(ym);
+    const columns = ["Data", "Ora inizio", "Ora fine", "Inizio pausa", "Fine pausa", "Luogo", "Attività", "Ore"];
+
+    // Un foglio per ogni dipendente
+    const empSheets = employees.map(emp => {
+      const sorted = emp.rows.slice().sort((a, b) => {
+        if (a.work_date !== b.work_date) return String(a.work_date).localeCompare(String(b.work_date));
+        const ta = timeToMinutes(a.start_time);
+        const tb = timeToMinutes(b.start_time);
+        if (ta !== tb) return ta - tb;
+        return String(a.created_at || "").localeCompare(String(b.created_at || ""));
+      });
+
+      const rows = sorted.map(r => ({
+        "Data": formatDateIT(r.work_date),
+        "Ora inizio": fmtTime(r.start_time),
+        "Ora fine": fmtTime(r.end_time),
+        "Inizio pausa": r.break_start ? fmtTime(r.break_start) : "",
+        "Fine pausa": r.break_end ? fmtTime(r.break_end) : "",
+        "Luogo": r.location || "",
+        "Attività": r.activity || "",
+        "Ore": formatHM(netMinutes(r)),
+      }));
+
+      return {
+        sheetName: emp.full_name.slice(0, 31),
+        title: `CAME – Ore ${emp.full_name} (${ymLabel})`,
+        columns,
+        rows,
+      };
+    });
+
+    // Foglio riepilogo (primo)
+    const summaryColumns = ["Dipendente", "Registrazioni", "Ore totali"];
+    const summaryRows = employees.map(emp => ({
+      "Dipendente": emp.full_name,
+      "Registrazioni": String(emp.rows.length),
+      "Ore totali": formatHM(emp.totalMin),
+    }));
+    const grandTotal = employees.reduce((acc, e) => acc + e.totalMin, 0);
+    summaryRows.push(
+      { "Dipendente": "", "Registrazioni": "", "Ore totali": "" },
+      { "Dipendente": "TOTALE", "Registrazioni": String(allRows.length), "Ore totali": formatHM(grandTotal) }
+    );
+
+    exportToExcelMultiSheet({
+      filename: `CAME_Admin_Ore_Tutti_${ymFile}.xlsx`,
+      sheets: [
+        {
+          sheetName: "Riepilogo",
+          title: `CAME – Riepilogo Ore Tutti (${ymLabel})`,
+          columns: summaryColumns,
+          rows: summaryRows,
+        },
+        ...empSheets,
+      ],
+    });
+
+  } catch (err) {
+    console.error(err);
+    alert("Errore durante l'esportazione. Controlla la console.");
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Export Excel (tutti)"; }
+  }
+});
+
 // Soluzione B: in Admin si parte scegliendo un dipendente (niente caricamento globale automatico)
 loadEmployees();
 
