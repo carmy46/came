@@ -821,7 +821,7 @@ function labelRequestType(t) {
   switch (t) {
     case "ferie": return "Ferie";
     case "permesso_giornaliero": return "Permesso giornaliero";
-    case "entrata_anticipata": return "Permesso entrata anticipata";
+    case "uscita_anticipata": return "Permesso uscita anticipata";
     case "entrata_posticipata": return "Permesso entrata posticipata";
     default: return t || "—";
   }

@@ -1275,7 +1275,7 @@ function labelRequestType(t) {
   switch (t) {
     case "ferie": return "Ferie";
     case "permesso_giornaliero": return "Permesso giornaliero";
-    case "entrata_anticipata": return "Permesso entrata anticipata";
+    case "uscita_anticipata": return "Permesso uscita anticipata";
     case "entrata_posticipata": return "Permesso entrata posticipata";
     default: return t || "—";
   }
@@ -1294,7 +1294,7 @@ function validatePendingRequestEdit({ type, start_date, end_date, time }) {
     if (!start_date) return { ok: false, msg: "Inserisci la data del permesso." };
     return { ok: true, msg: "" };
   }
-  if (t === "entrata_anticipata" || t === "entrata_posticipata") {
+  if (t === "uscita_anticipata" || t === "entrata_posticipata") {
     if (!start_date || !time) return { ok: false, msg: "Inserisci data e ora." };
     return { ok: true, msg: "" };
   }
@@ -1321,7 +1321,7 @@ function renderReqFieldsByType() {
     if (reqDatesRangeBox) reqDatesRangeBox.style.display = "block";
   } else if (t === "permesso_giornaliero") {
     if (reqDateSingleBox) reqDateSingleBox.style.display = "block";
-  } else if (t === "entrata_anticipata" || t === "entrata_posticipata") {
+  } else if (t === "uscita_anticipata" || t === "entrata_posticipata") {
     if (reqDateSingleBox) reqDateSingleBox.style.display = "block";
     if (reqTimeBox) reqTimeBox.style.display = "block";
   }
@@ -1390,7 +1390,7 @@ function initRequestsUI() {
           setReqMsg("Inserisci la data del permesso.", "error");
           return;
         }
-      } else if (type === "entrata_anticipata" || type === "entrata_posticipata") {
+      } else if (type === "uscita_anticipata" || type === "entrata_posticipata") {
         start_date = reqSingleDateEl?.value || null;
         time = reqTimeEl?.value || null;
         if (!start_date || !time) {
@@ -1585,7 +1585,7 @@ function renderRequestEditorHtml(r) {
   let fields = "";
   if (type === "ferie") fields = range;
   else if (type === "permesso_giornaliero") fields = dateSingle;
-  else if (type === "entrata_anticipata" || type === "entrata_posticipata") fields = dateSingle + timeBox;
+  else if (type === "uscita_anticipata" || type === "entrata_posticipata") fields = dateSingle + timeBox;
   else fields = `<p class="muted">Tipo non modificabile.</p>`;
 
   return `
