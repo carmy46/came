@@ -91,8 +91,11 @@ Deno.serve(async (req) => {
   if (username.length > USERNAME_MAX) {
     return json({ error: `Username troppo lungo (massimo ${USERNAME_MAX} caratteri).` }, 400);
   }
-  if (password.length < 8 || password.length > 72) {
-    return json({ error: "La password deve avere da 8 a 72 caratteri." }, 400);
+  // Nessuna regola nostra sulla password (anche solo numeri). Unico limite tecnico: 72 caratteri.
+  // Supabase Auth può averne di suoi (lunghezza minima nelle impostazioni): vedi errore sotto.
+  if (!password) return json({ error: "Inserisci la password." }, 400);
+  if (password.length > 72) {
+    return json({ error: "Password troppo lunga (massimo 72 caratteri)." }, 400);
   }
 
   // 3) Crea l'account (già confermato: nessuna email da verificare).
@@ -109,8 +112,12 @@ Deno.serve(async (req) => {
     if (/already|registered|exists/i.test(msg)) {
       return json({ error: "Questo username è già in uso." }, 409);
     }
-    if (/password/i.test(msg)) {
-      return json({ error: `Password rifiutata: ${msg}` }, 400);
+    if (createErr?.code === "weak_password" || /password/i.test(msg)) {
+      const min = msg.match(/at least (\d+)/i)?.[1];
+      return json(
+        { error: min ? `Supabase richiede una password di almeno ${min} caratteri.` : `Password rifiutata da Supabase: ${msg}` },
+        400,
+      );
     }
     return json({ error: `Impossibile creare l'account: ${msg || "errore sconosciuto"}` }, 500);
   }

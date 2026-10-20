@@ -25,8 +25,8 @@
   const copyBtn = document.getElementById("newEmpCopyBtn");
   const againBtn = document.getElementById("newEmpAgainBtn");
 
-  // niente 0/O, 1/l/I: le password si comunicano a voce o su WhatsApp
-  const PASS_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  // password suggerita: solo cifre, comoda da dire a voce o scrivere su WhatsApp (si può cambiare a mano)
+  const PASS_CHARS = "0123456789";
 
   let usernameTouched = false;
   let lastCreated = null; // { full_name, username, password }
@@ -46,7 +46,7 @@
       .slice(0, 30);
   }
 
-  function generatePassword(len = 10) {
+  function generatePassword(len = 8) {
     const buf = new Uint32Array(len);
     crypto.getRandomValues(buf);
     return Array.from(buf, (n) => PASS_CHARS[n % PASS_CHARS.length]).join("");
@@ -124,7 +124,7 @@
 
     if (full_name.length < 2) return setMsg("Inserisci nome e cognome.", "error");
     if (!username) return setMsg("Inserisci l'username.", "error");
-    if (password.length < 8) return setMsg("La password deve avere almeno 8 caratteri.", "error");
+    if (!password) return setMsg("Inserisci la password.", "error");
 
     submitBtn.disabled = true;
     submitBtn.textContent = "Creazione...";
