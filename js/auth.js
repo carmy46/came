@@ -36,6 +36,14 @@ async function usernameToEmail(username) {
   const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
   return `u${hex.slice(0, 40)}@${INTERNAL_EMAIL_DOMAIN}`;
 }
+// Password: Supabase Auth impone una lunghezza minima (di solito 6), ma i dipendenti usano codici corti
+// (da 4 cifre). Per gli account con username la password vera è "<scritta><suffisso>": il suffisso è fisso e
+// uguale per tutti, quindi non toglie né aggiunge sicurezza (conta solo quello che scrive il dipendente),
+// ma fa superare il minimo. Chi ha un'email vera non è coinvolto.
+const PASSWORD_SUFFIX = "-came-app";
+function internalPassword(p) {
+  return String(p ?? "") + PASSWORD_SUFFIX;
+}
 // --- fine ---
 
 loginBtn?.addEventListener("click", async () => {
@@ -56,9 +64,9 @@ loginBtn?.addEventListener("click", async () => {
       return;
     }
 
-    const candidates = typed.includes("@") ? [typed] : [];
+    const candidates = typed.includes("@") ? [{ email: typed, password }] : [];
     try {
-      candidates.push(await usernameToEmail(typed));
+      candidates.push({ email: await usernameToEmail(typed), password: internalPassword(password) });
     } catch (_) {
       if (!candidates.length) {
         setMsg("Per entrare con l'username apri il sito da https.", "error");
@@ -67,8 +75,8 @@ loginBtn?.addEventListener("click", async () => {
     }
 
     let signedIn = false;
-    for (const email of candidates) {
-      const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+    for (const c of candidates) {
+      const { error } = await window.supabaseClient.auth.signInWithPassword({ email: c.email, password: c.password });
       if (!error) { signedIn = true; break; }
     }
 

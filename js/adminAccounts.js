@@ -124,7 +124,7 @@
 
     if (full_name.length < 2) return setMsg("Inserisci nome e cognome.", "error");
     if (!username) return setMsg("Inserisci l'username.", "error");
-    if (!password) return setMsg("Inserisci la password.", "error");
+    if (password.length < 4) return setMsg("La password deve avere almeno 4 caratteri.", "error");
 
     submitBtn.disabled = true;
     submitBtn.textContent = "Creazione...";

@@ -24,6 +24,14 @@ async function usernameToEmail(username: string): Promise<string> {
   const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
   return `u${hex.slice(0, 40)}@${INTERNAL_EMAIL_DOMAIN}`;
 }
+// Password: Supabase Auth impone una lunghezza minima (di solito 6), ma i dipendenti usano codici corti
+// (da 4 cifre). Per gli account con username la password vera è "<scritta><suffisso>": il suffisso è fisso e
+// uguale per tutti, quindi non toglie né aggiunge sicurezza (conta solo quello che scrive il dipendente),
+// ma fa superare il minimo. Chi ha un'email vera non è coinvolto.
+const PASSWORD_SUFFIX = "-came-app";
+function internalPassword(p: unknown): string {
+  return String(p ?? "") + PASSWORD_SUFFIX;
+}
 // --- fine ---
 
 const USERNAME_MAX = 100;
@@ -91,11 +99,11 @@ Deno.serve(async (req) => {
   if (username.length > USERNAME_MAX) {
     return json({ error: `Username troppo lungo (massimo ${USERNAME_MAX} caratteri).` }, 400);
   }
-  // Nessuna regola nostra sulla password (anche solo numeri). Unico limite tecnico: 72 caratteri.
-  // Supabase Auth può averne di suoi (lunghezza minima nelle impostazioni): vedi errore sotto.
-  if (!password) return json({ error: "Inserisci la password." }, 400);
-  if (password.length > 72) {
-    return json({ error: "Password troppo lunga (massimo 72 caratteri)." }, 400);
+  // Unica regola sulla password: almeno 4 caratteri (anche solo numeri). Il resto è un limite tecnico:
+  // bcrypt usa al massimo 72 byte, suffisso interno compreso.
+  if (password.length < 4) return json({ error: "La password deve avere almeno 4 caratteri." }, 400);
+  if (new TextEncoder().encode(internalPassword(password)).length > 72) {
+    return json({ error: "Password troppo lunga." }, 400);
   }
 
   // 3) Crea l'account (già confermato: nessuna email da verificare).
@@ -103,7 +111,7 @@ Deno.serve(async (req) => {
   //    e Supabase rifiuta la creazione.
   const { data: created, error: createErr } = await admin.auth.admin.createUser({
     email: await usernameToEmail(username),
-    password,
+    password: internalPassword(password),
     email_confirm: true,
     user_metadata: { full_name: fullName, username },
   });
