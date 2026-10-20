@@ -25,7 +25,6 @@
   const copyBtn = document.getElementById("newEmpCopyBtn");
   const againBtn = document.getElementById("newEmpAgainBtn");
 
-  const USERNAME_RE = /^[a-z0-9._-]{3,30}$/;
   // niente 0/O, 1/l/I: le password si comunicano a voce o su WhatsApp
   const PASS_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
 
@@ -110,7 +109,6 @@
   });
   userEl.addEventListener("input", () => {
     usernameTouched = true;
-    userEl.value = userEl.value.toLowerCase().replace(/\s+/g, "");
   });
 
   genBtn.addEventListener("click", () => {
@@ -121,13 +119,11 @@
     e.preventDefault();
 
     const full_name = nameEl.value.trim().replace(/\s+/g, " ");
-    const username = userEl.value.trim().toLowerCase();
+    const username = userEl.value.trim().replace(/\s+/g, " ");
     const password = passEl.value;
 
     if (full_name.length < 2) return setMsg("Inserisci nome e cognome.", "error");
-    if (!USERNAME_RE.test(username)) {
-      return setMsg("Username da 3 a 30 caratteri: lettere minuscole, numeri, punto, trattino o underscore.", "error");
-    }
+    if (!username) return setMsg("Inserisci l'username.", "error");
     if (password.length < 8) return setMsg("La password deve avere almeno 8 caratteri.", "error");
 
     submitBtn.disabled = true;

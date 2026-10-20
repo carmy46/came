@@ -23,14 +23,27 @@ async function redirectByRole() {
   window.location.replace(target); // meglio di href: evita loop/cronologia
 }
 
+// --- username -> email interna (TENERE UGUALE nella Edge Function supabase/functions/create-employee) ---
+// L'username è libero (maiuscole, spazi, accenti...), ma Supabase Auth vuole un'email valida:
+// perciò l'account usa un'email interna calcolata dall'username (maiuscole e spazi extra non contano).
+const INTERNAL_EMAIL_DOMAIN = "came.invalid";
+function normalizeUsername(s) {
+  return String(s ?? "").normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
+}
+async function usernameToEmail(username) {
+  const bytes = new TextEncoder().encode(normalizeUsername(username));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+  return `u${hex.slice(0, 40)}@${INTERNAL_EMAIL_DOMAIN}`;
+}
+// --- fine ---
+
 loginBtn?.addEventListener("click", async () => {
   try {
     setMsg("Accesso in corso...");
-    // Chi ha un account creato dall'admin entra con il solo username: sotto è "<username>@came.invalid".
-    // Chi ha un'email vera continua a scriverla per intero.
-    // (Stesso dominio della Edge Function supabase/functions/create-employee)
+    // Si può scrivere l'username (account creati dall'admin) oppure un'email vera (account storici).
+    // Se c'è una @ provo prima come email, poi come username.
     const typed = (emailEl?.value || "").trim();
-    const email = typed.includes("@") ? typed : `${typed.toLowerCase()}@came.invalid`;
     const password = passEl?.value || "";
 
     if (!typed || !password) {
@@ -43,12 +56,23 @@ loginBtn?.addEventListener("click", async () => {
       return;
     }
 
-    const { error } = await window.supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const candidates = typed.includes("@") ? [typed] : [];
+    try {
+      candidates.push(await usernameToEmail(typed));
+    } catch (_) {
+      if (!candidates.length) {
+        setMsg("Per entrare con l'username apri il sito da https.", "error");
+        return;
+      }
+    }
 
-    if (error) {
+    let signedIn = false;
+    for (const email of candidates) {
+      const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+      if (!error) { signedIn = true; break; }
+    }
+
+    if (!signedIn) {
       setMsg("Credenziali non valide o utente non esistente.", "error");
       return;
     }

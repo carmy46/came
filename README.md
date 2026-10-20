@@ -40,8 +40,10 @@ Apri `http://localhost:5173/` (reindirizza a `login.html`).
 Dalla dashboard admin, **+ Nuovo dipendente** crea un account con nome, username e password.
 Il dipendente accede dal login scrivendo solo l'username (chi ha un'email vera continua a usarla).
 
-Sotto, l'account Supabase usa l'indirizzo interno `<username>@came.invalid` (dominio riservato, non riceve posta).
-Il dominio è scritto in due punti da tenere uguali: `js/auth.js` e `supabase/functions/create-employee/index.ts`.
+L'username è libero (maiuscole, spazi, accenti: nessuna regola; maiuscole e spazi extra non contano al login).
+Sotto, Supabase Auth vuole un'email valida: l'account ne usa una interna `u<codice>@came.invalid`,
+calcolata dall'username (dominio riservato, non riceve posta). Il calcolo è scritto in due punti da tenere uguali:
+`js/auth.js` e `supabase/functions/create-employee/index.ts`.
 
 Da fare **una volta** su Supabase:
 
