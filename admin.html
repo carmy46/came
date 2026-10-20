@@ -44,6 +44,7 @@
             <input id="adminEmployeesSearch" class="input" type="text" placeholder="Es. Mario" />
           </div>
         </div>
+        <button id="newEmployeeBtn" class="btn small" type="button" style="width:100%; margin:10px 0;">+ Nuovo dipendente</button>
         <div id="adminEmployeesChips" class="chips">Caricamento...</div>
       </div>
     </aside>
@@ -307,6 +308,51 @@
     </section>
   </main>
 
+  <!-- Nuovo dipendente (modale): l'admin crea username + password -->
+  <div id="newEmployeeModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-newemp-close></div>
+    <div class="modal-card newemp-card" role="dialog" aria-modal="true" aria-label="Nuovo dipendente">
+      <div class="modal-head">
+        <div style="font-weight:900; font-size:16px;">Nuovo dipendente</div>
+        <button class="btn small" type="button" data-newemp-close>Chiudi</button>
+      </div>
+
+      <form id="newEmployeeForm" autocomplete="off" novalidate>
+        <label class="label" for="newEmpName">Nome e cognome</label>
+        <input id="newEmpName" class="input" type="text" placeholder="Es. Mario Rossi" maxlength="80" />
+
+        <label class="label" for="newEmpUsername">Username</label>
+        <input id="newEmpUsername" class="input" type="text" placeholder="es. mario.rossi" maxlength="30"
+          autocapitalize="none" autocorrect="off" spellcheck="false" />
+        <div class="muted newemp-hint">Da 3 a 30 caratteri: lettere minuscole, numeri, punto, trattino o underscore.</div>
+
+        <label class="label" for="newEmpPassword">Password</label>
+        <div class="newemp-pass">
+          <input id="newEmpPassword" class="input" type="text" maxlength="72"
+            autocapitalize="none" autocorrect="off" spellcheck="false" />
+          <button id="newEmpGenBtn" class="btn small" type="button">Genera</button>
+        </div>
+        <div class="muted newemp-hint">Almeno 8 caratteri. Questa è la password che darai al dipendente.</div>
+
+        <button id="newEmpSubmit" class="btn" type="submit" style="margin-top:16px; width:100%;">Crea account</button>
+        <p id="newEmpMsg" class="msg"></p>
+      </form>
+
+      <div id="newEmpDone" style="display:none;">
+        <p class="msg ok" style="margin-top:14px;">Account creato per <strong id="newEmpDoneName"></strong>.</p>
+        <div class="newemp-creds">
+          <div><span class="muted">Username</span><strong id="newEmpDoneUser"></strong></div>
+          <div><span class="muted">Password</span><strong id="newEmpDonePass"></strong></div>
+        </div>
+        <p class="muted newemp-hint">Segnatela o copiala ora: dopo aver chiuso non potrai più rivederla.</p>
+        <div class="newemp-actions">
+          <button id="newEmpCopyBtn" class="btn" type="button">Copia credenziali</button>
+          <button id="newEmpAgainBtn" class="btn ghost" type="button">Crea un altro</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scheda dipendente (modale) -->
   <div id="adminEmployeeModal" class="modal as-page" aria-hidden="true">
     <div class="modal-backdrop" data-emp-modal-close></div>
@@ -409,6 +455,7 @@
   <script src="js/guard.js"></script>
   <script src="js/notifications.js"></script>
   <script src="js/admin.js"></script>
+  <script src="js/adminAccounts.js"></script>
   <script>
     requireRole("admin");
   </script>

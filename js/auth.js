@@ -26,10 +26,14 @@ async function redirectByRole() {
 loginBtn?.addEventListener("click", async () => {
   try {
     setMsg("Accesso in corso...");
-    const email = (emailEl?.value || "").trim();
+    // Chi ha un account creato dall'admin entra con il solo username: sotto è "<username>@came.invalid".
+    // Chi ha un'email vera continua a scriverla per intero.
+    // (Stesso dominio della Edge Function supabase/functions/create-employee)
+    const typed = (emailEl?.value || "").trim();
+    const email = typed.includes("@") ? typed : `${typed.toLowerCase()}@came.invalid`;
     const password = passEl?.value || "";
 
-    if (!email || !password) {
+    if (!typed || !password) {
       setMsg("Inserisci username e password.", "error");
       return;
     }

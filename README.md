@@ -34,3 +34,20 @@ Apri `http://localhost:5173/` (reindirizza a `login.html`).
 
 
 
+
+## Creazione account dipendenti (admin)
+
+Dalla dashboard admin, **+ Nuovo dipendente** crea un account con nome, username e password.
+Il dipendente accede dal login scrivendo solo l'username (chi ha un'email vera continua a usarla).
+
+Sotto, l'account Supabase usa l'indirizzo interno `<username>@came.invalid` (dominio riservato, non riceve posta).
+Il dominio è scritto in due punti da tenere uguali: `js/auth.js` e `supabase/functions/create-employee/index.ts`.
+
+Da fare **una volta** su Supabase:
+
+1. **SQL Editor** → esegui `supabase/migrations/20261020_add_username_to_profiles.sql` (aggiunge `profiles.username`).
+2. **Edge Functions** → pubblica `supabase/functions/create-employee/index.ts` con il nome `create-employee`
+   (da dashboard: *Deploy a new function* → *Via Editor*, oppure `supabase functions deploy create-employee`).
+   Le chiavi `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` sono già fornite da Supabase, non vanno inserite.
+
+La funzione accetta solo chiamate di un utente con `profiles.role = 'admin'`.

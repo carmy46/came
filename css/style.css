@@ -3415,3 +3415,20 @@ body.page-admin .po-deliver-input{ max-width:170px; }
     max-height: calc(100vh - 76px);
   }
 }
+
+/* Modale "Nuovo dipendente" (admin): creazione account con username + password */
+.newemp-card{ width: min(460px, calc(100% - 24px)); margin-top: 8vh; }
+.newemp-pass{ display:flex; gap:8px; align-items:center; }
+.newemp-pass .input{ flex:1; min-width:0; font-family: ui-monospace, Consolas, monospace; }
+.newemp-hint{ font-size:12px; margin:4px 0 0; }
+.newemp-creds{
+  margin-top:12px;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.05);
+}
+.newemp-creds > div{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:6px 0; }
+.newemp-creds strong{ font-family: ui-monospace, Consolas, monospace; font-size:16px; word-break:break-all; user-select:all; }
+.newemp-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.newemp-actions .btn{ flex:1; min-width:140px; }
