@@ -590,7 +590,7 @@ async function loadMissingHours(ym, monthLogs) {
         loggedDates: logsByUser.get(p.id),
         requests: (reqs || []).filter(r => r.user_id === p.id && (r.end_date || r.start_date) >= start),
       });
-      if (days.length) rows.push({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", phone: p.phone, count: days.length });
+      if (days.length) rows.push({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", phone: p.phone });
     }
 
     if (!checked) {
@@ -602,8 +602,29 @@ async function loadMissingHours(ym, monthLogs) {
       return;
     }
 
-    rows.sort((a, b) => b.count - a.count || a.full_name.localeCompare(b.full_name, "it", { sensitivity: "base" }));
+    // Ultimo giorno lavorato con ore inserite (di sempre, non solo del mese)
+    await Promise.all(rows.map(async (r) => {
+      const { data: last, error } = await supabaseClient
+        .from("work_logs")
+        .select("work_date")
+        .eq("user_id", r.id)
+        .order("work_date", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      r.lastDate = last?.[0]?.work_date || "";
+    }));
+
+    // Prima chi è più indietro (o non ha mai inserito ore)
+    rows.sort((a, b) => a.lastDate.localeCompare(b.lastDate) || a.full_name.localeCompare(b.full_name, "it", { sensitivity: "base" }));
     if (infoEl) infoEl.textContent = `${rows.length} dipendent${rows.length === 1 ? "e" : "i"}`;
+
+    const thisYear = new Date().getFullYear();
+    const fmtLast = (iso) => {
+      const d = new Date(iso + "T00:00:00");
+      const opts = { weekday: "short", day: "numeric", month: "short" };
+      if (d.getFullYear() !== thisYear) opts.year = "numeric";
+      return new Intl.DateTimeFormat("it-IT", opts).format(d);
+    };
 
     el.innerHTML = rows.map(r => {
       const link = whatsappReminderLink(r.phone, r.full_name);
@@ -613,7 +634,7 @@ async function loadMissingHours(ym, monthLogs) {
       return `
         <div class="ov-row ov-miss-row">
           <button class="ov-miss-name" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">${escapeHtml(r.full_name)}</button>
-          <span class="ov-row-days">${r.count} giorn${r.count === 1 ? "o" : "i"} senza ore</span>
+          <span class="ov-row-days">${r.lastDate ? `Ultime ore: ${escapeHtml(fmtLast(r.lastDate))}` : "Nessuna ora inserita"}</span>
           ${action}
         </div>`;
     }).join("");
