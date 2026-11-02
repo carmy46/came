@@ -674,7 +674,11 @@ async function loadMissingHours(ym, monthLogs) {
       logsByUser.get(r.user_id).add(r.work_date);
     }
 
-    // Tutti i dipendenti attivi: "behind" = almeno un giorno lun–ven senza ore nel mese scelto
+    // Tutti i dipendenti attivi:
+    // - behind = almeno un giorno lun–ven senza ore nel mese scelto (giallo)
+    // - urgent = giorni senza ore dal 20 del mese in poi: è fine mese, vanno chiusi (rosso)
+    const URGENT_DAY = 20;
+    const urgentFrom = `${ym}-${String(URGENT_DAY).padStart(2, "0")}`;
     const rows = [];
     for (const p of (profiles || [])) {
       if (!p?.id || String(p.role || "").toLowerCase() === "admin" || p.active === false) continue;
@@ -685,8 +689,12 @@ async function loadMissingHours(ym, monthLogs) {
         loggedDates: logsByUser.get(p.id),
         requests: (reqs || []).filter(r => r.user_id === p.id && (r.end_date || r.start_date) >= start),
       }) : [];
-      rows.push({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", phone: p.phone, behind: days.length > 0 });
+      const urgentDays = days.filter(d => d >= urgentFrom).length;
+      rows.push({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", phone: p.phone, behind: days.length > 0, urgentDays });
     }
+
+    const alertEl = document.getElementById("ovMissingAlert");
+    if (alertEl) alertEl.hidden = true;
 
     if (!rows.length) {
       el.innerHTML = `<div class="empty-state">Nessun dipendente attivo.</div>`;
@@ -705,12 +713,20 @@ async function loadMissingHours(ym, monthLogs) {
       r.lastDate = last?.[0]?.work_date || "";
     }));
 
-    // Prima chi è indietro (dal più indietro), poi chi è in regola
-    rows.sort((a, b) => (b.behind - a.behind) || a.lastDate.localeCompare(b.lastDate) || a.full_name.localeCompare(b.full_name, "it", { sensitivity: "base" }));
+    // In cima chi ha inserito le ore più recenti (es. oggi), in fondo chi non ne ha mai inserite
+    rows.sort((a, b) => b.lastDate.localeCompare(a.lastDate) || a.full_name.localeCompare(b.full_name, "it", { sensitivity: "base" }));
     const behindCount = rows.filter(r => r.behind).length;
     if (infoEl) infoEl.textContent = behindCount
       ? `${behindCount} da sollecitare su ${rows.length}`
       : `Tutti in regola ✅`;
+
+    // Fine mese: avviso ben visibile per chi non ha inserito le ore dal 20 in poi
+    const urgentCount = rows.filter(r => r.urgentDays > 0).length;
+    if (alertEl && urgentCount) {
+      const monthName = new Intl.DateTimeFormat("it-IT", { month: "long" }).format(new Date(ym + "-01T00:00:00"));
+      alertEl.innerHTML = `⚠️ <strong>Fine mese:</strong> ${urgentCount} dipendent${urgentCount === 1 ? "e non ha" : "i non hanno"} inserito le ore dal ${URGENT_DAY} ${escapeHtml(monthName)}.`;
+      alertEl.hidden = false;
+    }
 
     const thisYear = new Date().getFullYear();
     const fmtLast = (iso) => {
@@ -728,8 +744,11 @@ async function loadMissingHours(ym, monthLogs) {
           ? `<a class="btn small wa-btn" href="${escapeHtml(link)}" target="_blank" rel="noopener">WhatsApp</a>`
           : `<button class="btn small ghost" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">Aggiungi numero</button>`;
       return `
-        <div class="ov-row ov-miss-row${r.behind ? " is-behind" : ""}">
-          <button class="ov-miss-name" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">${escapeHtml(r.full_name)}</button>
+        <div class="ov-row ov-miss-row${r.urgentDays ? " is-urgent" : r.behind ? " is-behind" : ""}">
+          <span class="ov-miss-who">
+            <button class="ov-miss-name" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">${escapeHtml(r.full_name)}</button>
+            ${r.urgentDays ? `<span class="ov-urgent">⚠️ Ore mancanti dal ${URGENT_DAY}</span>` : ""}
+          </span>
           <span class="ov-row-days">${r.lastDate ? `Ultime ore: ${escapeHtml(fmtLast(r.lastDate))}` : "Nessuna ora inserita"}</span>
           ${action}
         </div>`;
