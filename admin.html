@@ -99,7 +99,10 @@
               <div class="emp-detail-head">
                 <button id="empBackBtn" class="btn small emp-back" type="button">← Dipendenti</button>
                 <h3 id="adminEmpModalName">—</h3>
-                <button id="empActiveToggle" class="btn small ghost emp-active-toggle" type="button" hidden>Disattiva account</button>
+                <div class="emp-account-actions">
+                  <button id="empActiveToggle" class="btn small ghost emp-active-toggle" type="button" hidden>Disattiva account</button>
+                  <button id="empDeleteBtn" class="btn small danger emp-delete" type="button" hidden>Elimina definitivamente</button>
+                </div>
                 <div class="seg" role="tablist">
                   <button class="tab active" type="button" data-emp-tab="hours">Ore</button>
                   <button class="tab" type="button" data-emp-tab="requests">Richieste</button>

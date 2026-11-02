@@ -187,7 +187,62 @@ function setEmpActiveUi(active) {
   empActiveToggleBtn.disabled = false;
   empActiveToggleBtn.textContent = active === false ? "Riattiva account" : "Disattiva account";
   empActiveToggleBtn.classList.toggle("is-reactivate", active === false);
+  if (empDeleteBtn) { empDeleteBtn.hidden = active === null; empDeleteBtn.disabled = false; }
 }
+
+// --- Elimina definitivamente (Edge Function "delete-employee"): cancella account e TUTTI i suoi dati ---
+const empDeleteBtn = document.getElementById("empDeleteBtn");
+
+empDeleteBtn?.addEventListener("click", async () => {
+  const emp = adminEmpSelected;
+  if (!emp?.id) return;
+
+  // Quanti dati spariranno, per decidere con cognizione di causa
+  const countOf = async (table) => {
+    const { count } = await supabaseClient.from(table).select("id", { count: "exact", head: true }).eq("user_id", emp.id);
+    return count || 0;
+  };
+  let summary = "";
+  try {
+    const [hours, reqs, orders] = await Promise.all([countOf("work_logs"), countOf("requests"), countOf("product_orders")]);
+    summary = `\n\nVerranno cancellati anche:\n• ${hours} registrazioni ore\n• ${reqs} richieste\n• ${orders} righe di ordini prodotti`;
+  } catch (_) {}
+
+  if (!confirm(
+    `ELIMINARE DEFINITIVAMENTE ${emp.full_name}?${summary}\n\n` +
+    `Non si può annullare e i report dei mesi passati non lo conteranno più.\n` +
+    `Se vuoi solo togliergli l'accesso e tenere lo storico, usa "Disattiva account".`
+  )) return;
+
+  const typed = prompt(`Per confermare scrivi ELIMINA`);
+  if (String(typed || "").trim().toUpperCase() !== "ELIMINA") {
+    if (typed !== null) alert("Eliminazione annullata: non hai scritto ELIMINA.");
+    return;
+  }
+
+  empDeleteBtn.disabled = true;
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("delete-employee", { body: { user_id: emp.id } });
+    if (error) {
+      let msg = "Eliminazione non riuscita. Riprova.";
+      try { msg = (await error.context.json())?.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+    if (data?.error) throw new Error(data.error);
+
+    // Torna all'elenco: il dipendente non esiste più
+    adminEmpSelected = null;
+    if (empPanelEl) empPanelEl.hidden = true;
+    if (empEmptyEl) empEmptyEl.hidden = false;
+    empSplitEl?.classList.remove("has-selection");
+    await loadEmployees();
+    alert(`${emp.full_name} è stato eliminato.`);
+  } catch (e) {
+    console.error(e);
+    alert(e.message || "Eliminazione non riuscita. Riprova.");
+    empDeleteBtn.disabled = false;
+  }
+});
 
 empActiveToggleBtn?.addEventListener("click", async () => {
   const emp = adminEmpSelected;

@@ -3369,7 +3369,9 @@ body.page-admin .emp-ex > summary{
   padding: 6px 4px;
 }
 body.page-admin .emp-list-item.is-inactive{ color: var(--muted); }
-body.page-admin .emp-active-toggle{ margin-left: auto; color: var(--danger); border-color: rgba(240,119,111,.4); }
+body.page-admin .emp-account-actions{ margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+body.page-admin .emp-account-actions .btn[hidden]{ display: none; }
+body.page-admin .emp-active-toggle{ color: var(--danger); border-color: rgba(240,119,111,.4); }
 body.page-admin .emp-active-toggle.is-reactivate{ color: var(--accent2); border-color: rgba(95,201,232,.45); }
 body.page-admin .emp-active-toggle[hidden]{ display: none; }
 body.page-admin .emp-inactive-note{
