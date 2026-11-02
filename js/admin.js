@@ -676,7 +676,8 @@ async function loadMissingHours(ym, monthLogs) {
 
     // Tutti i dipendenti attivi:
     // - behind = almeno un giorno lun–ven senza ore nel mese scelto (giallo)
-    // - urgent = giorni senza ore dal 20 del mese in poi: è fine mese, vanno chiusi (rosso)
+    // - urgent = dal 20 del mese in poi NESSUNA ora inserita (ma c'erano giorni lun–ven da coprire,
+    //   non coperti da ferie/permessi): è fine mese, vanno chiusi (rosso)
     const URGENT_DAY = 20;
     const urgentFrom = `${ym}-${String(URGENT_DAY).padStart(2, "0")}`;
     const rows = [];
@@ -689,7 +690,8 @@ async function loadMissingHours(ym, monthLogs) {
         loggedDates: logsByUser.get(p.id),
         requests: (reqs || []).filter(r => r.user_id === p.id && (r.end_date || r.start_date) >= start),
       }) : [];
-      const urgentDays = days.filter(d => d >= urgentFrom).length;
+      const loggedSince20 = Array.from(logsByUser.get(p.id) || []).some(d => d >= urgentFrom);
+      const urgentDays = loggedSince20 ? 0 : days.filter(d => d >= urgentFrom).length;
       rows.push({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", phone: p.phone, behind: days.length > 0, urgentDays });
     }
 
@@ -724,7 +726,7 @@ async function loadMissingHours(ym, monthLogs) {
     const urgentCount = rows.filter(r => r.urgentDays > 0).length;
     if (alertEl && urgentCount) {
       const monthName = new Intl.DateTimeFormat("it-IT", { month: "long" }).format(new Date(ym + "-01T00:00:00"));
-      alertEl.innerHTML = `⚠️ <strong>Fine mese:</strong> ${urgentCount} dipendent${urgentCount === 1 ? "e non ha" : "i non hanno"} inserito le ore dal ${URGENT_DAY} ${escapeHtml(monthName)}.`;
+      alertEl.innerHTML = `⚠️ <strong>Fine mese:</strong> ${urgentCount} dipendent${urgentCount === 1 ? "e non ha" : "i non hanno"} inserito nessuna ora dal ${URGENT_DAY} ${escapeHtml(monthName)}.`;
       alertEl.hidden = false;
     }
 
@@ -747,7 +749,7 @@ async function loadMissingHours(ym, monthLogs) {
         <div class="ov-row ov-miss-row${r.urgentDays ? " is-urgent" : r.behind ? " is-behind" : ""}">
           <span class="ov-miss-who">
             <button class="ov-miss-name" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">${escapeHtml(r.full_name)}</button>
-            ${r.urgentDays ? `<span class="ov-urgent">⚠️ Ore mancanti dal ${URGENT_DAY}</span>` : ""}
+            ${r.urgentDays ? `<span class="ov-urgent">⚠️ Nessuna ora dal ${URGENT_DAY}</span>` : ""}
           </span>
           <span class="ov-row-days">${r.lastDate ? `Ultime ore: ${escapeHtml(fmtLast(r.lastDate))}` : "Nessuna ora inserita"}</span>
           ${action}
