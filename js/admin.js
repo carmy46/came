@@ -674,8 +674,8 @@ async function loadMissingHours(ym, monthLogs) {
       logsByUser.get(r.user_id).add(r.work_date);
     }
 
-    // Tutti i dipendenti attivi:
-    // - behind = almeno un giorno lun–ven senza ore nel mese scelto (giallo)
+    // Tutti i dipendenti attivi, ognuno con WhatsApp. I giorni sparsi senza ore non si segnalano
+    // (spesso sono giorni non lavorati): basta l'ultimo giorno inserito. Si segnala solo:
     // - urgent = dal 20 del mese in poi NESSUNA ora inserita (ma c'erano giorni lun–ven da coprire,
     //   non coperti da ferie/permessi): è fine mese, vanno chiusi (rosso)
     const URGENT_DAY = 20;
@@ -692,7 +692,7 @@ async function loadMissingHours(ym, monthLogs) {
       }) : [];
       const loggedSince20 = Array.from(logsByUser.get(p.id) || []).some(d => d >= urgentFrom);
       const urgentDays = loggedSince20 ? 0 : days.filter(d => d >= urgentFrom).length;
-      rows.push({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", phone: p.phone, behind: days.length > 0, urgentDays });
+      rows.push({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", phone: p.phone, urgentDays });
     }
 
     const alertEl = document.getElementById("ovMissingAlert");
@@ -717,10 +717,7 @@ async function loadMissingHours(ym, monthLogs) {
 
     // In cima chi ha inserito le ore più recenti (es. oggi), in fondo chi non ne ha mai inserite
     rows.sort((a, b) => b.lastDate.localeCompare(a.lastDate) || a.full_name.localeCompare(b.full_name, "it", { sensitivity: "base" }));
-    const behindCount = rows.filter(r => r.behind).length;
-    if (infoEl) infoEl.textContent = behindCount
-      ? `${behindCount} da sollecitare su ${rows.length}`
-      : `Tutti in regola ✅`;
+    if (infoEl) infoEl.textContent = `${rows.length} dipendent${rows.length === 1 ? "e" : "i"}`;
 
     // Fine mese: avviso ben visibile per chi non ha inserito le ore dal 20 in poi
     const urgentCount = rows.filter(r => r.urgentDays > 0).length;
@@ -739,14 +736,12 @@ async function loadMissingHours(ym, monthLogs) {
     };
 
     el.innerHTML = rows.map(r => {
-      const link = r.behind ? whatsappReminderLink(r.phone, r.full_name) : "";
-      const action = !r.behind
-        ? `<span class="ov-ok">✅ In regola</span>`
-        : link
-          ? `<a class="btn small wa-btn" href="${escapeHtml(link)}" target="_blank" rel="noopener">WhatsApp</a>`
-          : `<button class="btn small ghost" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">Aggiungi numero</button>`;
+      const link = whatsappReminderLink(r.phone, r.full_name);
+      const action = link
+        ? `<a class="btn small wa-btn" href="${escapeHtml(link)}" target="_blank" rel="noopener">WhatsApp</a>`
+        : `<button class="btn small ghost" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">Aggiungi numero</button>`;
       return `
-        <div class="ov-row ov-miss-row${r.urgentDays ? " is-urgent" : r.behind ? " is-behind" : ""}">
+        <div class="ov-row ov-miss-row${r.urgentDays ? " is-urgent" : ""}">
           <span class="ov-miss-who">
             <button class="ov-miss-name" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">${escapeHtml(r.full_name)}</button>
             ${r.urgentDays ? `<span class="ov-urgent">⚠️ Nessuna ora dal ${URGENT_DAY}</span>` : ""}

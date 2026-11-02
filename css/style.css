@@ -3333,14 +3333,12 @@ body.page-admin .admin-table-head{ position: static; margin: 8px 0; }
   body.page-admin .ov-row-days{ display: none; }
   body.page-admin .ov-miss-row{ grid-template-columns: 1fr auto; row-gap: 2px; }
   body.page-admin .ov-miss-row .ov-row-days{ display: block; grid-column: 1; grid-row: 2; font-size: 12px; }
-  body.page-admin .ov-miss-row > .btn,
-  body.page-admin .ov-miss-row > .ov-ok{ grid-column: 2; grid-row: 1 / span 2; }
+  body.page-admin .ov-miss-row > .btn{ grid-column: 2; grid-row: 1 / span 2; }
 }
 
 /* Panoramica: ore da inserire + promemoria WhatsApp */
 body.page-admin .ov-miss-row{ grid-template-columns: 1fr auto auto; cursor: default; }
 body.page-admin .ov-miss-row:hover{ background: rgba(255,255,255,.03); }
-body.page-admin .ov-miss-row.is-behind{ box-shadow: inset 3px 0 0 var(--amber); }
 body.page-admin .ov-miss-row.is-urgent{ box-shadow: inset 4px 0 0 var(--danger); background: rgba(240,119,111,.08); }
 body.page-admin .ov-miss-who{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 body.page-admin .ov-urgent{
@@ -3361,7 +3359,6 @@ body.page-admin .ov-alert{
   font-size: 14px;
 }
 body.page-admin .ov-alert[hidden]{ display: none; }
-body.page-admin .ov-ok{ font-size: 13px; font-weight: 700; color: var(--accent2); white-space: nowrap; }
 body.page-admin .ov-miss-name{
   padding: 0;
   border: 0;
