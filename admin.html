@@ -368,6 +368,55 @@
     </div>
   </div>
 
+  <!-- Modifica una registrazione ore (modale) -->
+  <div id="editLogModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-editlog-close></div>
+    <div class="modal-card newemp-card" role="dialog" aria-modal="true" aria-labelledby="editLogTitle">
+      <div class="modal-head">
+        <div>
+          <div id="editLogTitle" style="font-weight:900; font-size:16px;">Modifica ore</div>
+          <div id="editLogWho" class="muted" style="margin:2px 0 0;"></div>
+        </div>
+        <button class="btn small" type="button" data-editlog-close>Chiudi</button>
+      </div>
+
+      <form id="editLogForm" autocomplete="off" novalidate>
+        <label class="label" for="editLogDate">Data</label>
+        <input id="editLogDate" class="input" type="date" />
+
+        <div class="edit-log-grid">
+          <div>
+            <label class="label" for="editLogStart">Ora inizio</label>
+            <input id="editLogStart" class="input" type="time" step="300" />
+          </div>
+          <div>
+            <label class="label" for="editLogEnd">Ora fine</label>
+            <input id="editLogEnd" class="input" type="time" step="300" />
+          </div>
+          <div>
+            <label class="label" for="editLogBreakStart">Inizio pausa</label>
+            <input id="editLogBreakStart" class="input" type="time" step="300" />
+          </div>
+          <div>
+            <label class="label" for="editLogBreakEnd">Fine pausa</label>
+            <input id="editLogBreakEnd" class="input" type="time" step="300" />
+          </div>
+        </div>
+
+        <label class="label" for="editLogLocation">Luogo</label>
+        <input id="editLogLocation" class="input" list="adminPlacesList" />
+        <datalist id="adminPlacesList"></datalist>
+
+        <label class="label" for="editLogActivity">Attività</label>
+        <input id="editLogActivity" class="input" list="adminActivitiesList" />
+        <datalist id="adminActivitiesList"></datalist>
+
+        <button id="editLogSave" class="btn" type="submit" style="margin-top:16px; width:100%;">Salva modifiche</button>
+        <p id="editLogMsg" class="msg"></p>
+      </form>
+    </div>
+  </div>
+
   <!-- Export libs -->
   <!-- xlsx-js-style: fork di SheetJS che SCRIVE gli stili nel file (colori, bordi, grassetti).
        La versione "xlsx" ufficiale li ignora in scrittura. Stesso API (window.XLSX). -->

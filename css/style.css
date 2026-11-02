@@ -3170,21 +3170,29 @@ body.page-admin .btn.danger{
 }
 body.page-admin .btn.danger:hover{ background: rgba(240,119,111,.2); border-color: var(--danger); }
 body.page-admin .icon-btn{ min-width: 40px; min-height: 36px; padding: 6px 8px; line-height: 1; }
-body.page-admin .row-actions{ display: flex; justify-content: flex-end; }
+body.page-admin .row-actions{ display: flex; justify-content: flex-end; gap: 6px; }
+
+/* modale "Modifica ore": orari a due colonne anche su telefono */
+body.page-admin .edit-log-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+body.page-admin #editLogModal .modal-card{ max-height: calc(100vh - 16vh); }
 
 /* intestazione tabelle: non più "appiccicata" sotto la barra */
 body.page-admin .admin-table-head{ position: static; margin: 8px 0; }
 
-/* Ore nella scheda: 4 colonne (orari, luogo, ore, elimina) */
+/* Ore nella scheda: 4 colonne (orari, luogo, ore, modifica/elimina) */
 @media (min-width: 980px){
   body.page-admin .admin-table-head.hours,
   body.page-admin #empHoursList .rowItem{
-    grid-template-columns: 1.35fr 1.2fr 110px 52px;
+    grid-template-columns: 1.35fr 1.2fr 110px 96px;
   }
 }
 @media (max-width: 979px){
   body.page-admin .admin-table-head{ display: none; }
-  /* riga ore su telefono: testo a sinistra, cestino a destra */
+  /* riga ore su telefono: testo a sinistra, tasti a destra */
   body.page-admin #empHoursList .rowItem{
     grid-template-columns: 1fr auto;
     align-items: center;

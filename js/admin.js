@@ -1400,6 +1400,8 @@ async function loadEmpHours() {
           <div>${escapeHtml(r.location)} • ${escapeHtml(r.activity)}</div>
           <div>${escapeHtml(formatHM(netMinutes(r)))}</div>
           <div class="row-actions">
+            <button class="btn small icon-btn" type="button" data-edit-log="${escapeHtml(String(r.id))}"
+              title="Modifica questa registrazione" aria-label="Modifica registrazione ${escapeHtml(when)}">✏️</button>
             <button class="btn small danger icon-btn" type="button" data-del-log="${escapeHtml(String(r.id))}"
               title="Elimina questa registrazione" aria-label="Elimina registrazione ${escapeHtml(when)}">🗑</button>
           </div>
@@ -1415,7 +1417,183 @@ async function loadEmpHours() {
   empHoursListEl.querySelectorAll("[data-del-log]").forEach((btn) => {
     btn.addEventListener("click", () => deleteWorkLog(btn.getAttribute("data-del-log"), btn));
   });
+  empHoursListEl.querySelectorAll("[data-edit-log]").forEach((btn) => {
+    btn.addEventListener("click", () => openEditLog(btn.getAttribute("data-edit-log")));
+  });
 }
+
+// ============================
+// MODIFICA UNA REGISTRAZIONE ORE (modale)
+// Stessi controlli della modifica lato dipendente (employee.js)
+// ============================
+const editLogModalEl = document.getElementById("editLogModal");
+const editLogFormEl = document.getElementById("editLogForm");
+const editLogMsgEl = document.getElementById("editLogMsg");
+const editLogSaveBtn = document.getElementById("editLogSave");
+const editLogFields = {
+  work_date: document.getElementById("editLogDate"),
+  start_time: document.getElementById("editLogStart"),
+  end_time: document.getElementById("editLogEnd"),
+  break_start: document.getElementById("editLogBreakStart"),
+  break_end: document.getElementById("editLogBreakEnd"),
+  location: document.getElementById("editLogLocation"),
+  activity: document.getElementById("editLogActivity"),
+};
+let editLogId = null;
+let adminCatalogListsLoaded = false;
+
+function setEditLogMsg(text, type = "info") {
+  if (!editLogMsgEl) return;
+  editLogMsgEl.textContent = text || "";
+  editLogMsgEl.className = `msg ${type}`;
+}
+
+function validateWorkLogLike({ start_time, end_time, break_start, break_end }) {
+  if (!start_time || !end_time) return { ok: false, msg: "Seleziona ora inizio e fine." };
+
+  const startMin = timeToMinutes(start_time);
+  // Durata con passaggio mezzanotte (turni notturni)
+  const durationMin = minutesBetween(start_time, end_time);
+  if (durationMin === 0) return { ok: false, msg: "L'ora fine deve essere diversa dall'ora inizio." };
+
+  if ((break_start && !break_end) || (!break_start && break_end)) {
+    return { ok: false, msg: "Se inserisci la pausa, compila sia inizio che fine pausa." };
+  }
+  if (break_start && break_end) {
+    const bs = timeToMinutes(break_start);
+    const be = timeToMinutes(break_end);
+    if (be <= bs) return { ok: false, msg: "La fine pausa deve essere dopo l'inizio pausa." };
+    let bsRel = bs - startMin;
+    let beRel = be - startMin;
+    if (bsRel < 0) bsRel += 24 * 60;
+    if (beRel < 0) beRel += 24 * 60;
+    if (bsRel >= durationMin || beRel > durationMin) {
+      return { ok: false, msg: "La pausa deve essere dentro l'orario di lavoro." };
+    }
+  }
+  return { ok: true, msg: "" };
+}
+
+// Suggerimenti per Luogo e Attività presi dai Cataloghi (si può comunque scrivere a mano)
+async function loadAdminCatalogLists() {
+  if (adminCatalogListsLoaded) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from("catalog_items")
+      .select("type,name")
+      .eq("active", true)
+      .order("sort_order", { ascending: true });
+    if (error) throw error;
+    const fill = (listId, type) => {
+      const dl = document.getElementById(listId);
+      if (!dl) return;
+      dl.innerHTML = (data || [])
+        .filter(it => it.type === type)
+        .map(it => `<option value="${escapeHtml(it.name)}"></option>`)
+        .join("");
+    };
+    fill("adminPlacesList", "place");
+    fill("adminActivitiesList", "activity");
+    adminCatalogListsLoaded = true;
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function openEditLog(id) {
+  const r = empHoursRows.find(x => String(x.id) === String(id));
+  if (!r || !editLogModalEl) return;
+  editLogId = r.id;
+
+  editLogFields.work_date.value = r.work_date || "";
+  editLogFields.start_time.value = fmtTime(r.start_time) === "—" ? "" : fmtTime(r.start_time);
+  editLogFields.end_time.value = fmtTime(r.end_time) === "—" ? "" : fmtTime(r.end_time);
+  editLogFields.break_start.value = r.break_start ? fmtTime(r.break_start) : "";
+  editLogFields.break_end.value = r.break_end ? fmtTime(r.break_end) : "";
+  editLogFields.location.value = r.location || "";
+  editLogFields.activity.value = r.activity || "";
+
+  const who = document.getElementById("editLogWho");
+  if (who) who.textContent = adminEmpSelected?.full_name || "";
+  setEditLogMsg("");
+  if (editLogSaveBtn) { editLogSaveBtn.disabled = false; editLogSaveBtn.textContent = "Salva modifiche"; }
+
+  editLogModalEl.classList.add("open");
+  editLogModalEl.setAttribute("aria-hidden", "false");
+  lockBodyScroll();
+  loadAdminCatalogLists();
+}
+
+function closeEditLog() {
+  if (!editLogModalEl) return;
+  editLogModalEl.classList.remove("open");
+  editLogModalEl.setAttribute("aria-hidden", "true");
+  unlockBodyScroll();
+  editLogId = null;
+}
+
+editLogModalEl?.querySelectorAll("[data-editlog-close]").forEach((el) => el.addEventListener("click", closeEditLog));
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && editLogModalEl?.classList.contains("open")) closeEditLog();
+});
+
+editLogFormEl?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!editLogId) return;
+
+  const val = (k) => (editLogFields[k]?.value || "").trim();
+  const payload = {
+    work_date: val("work_date"),
+    start_time: val("start_time"),
+    end_time: val("end_time"),
+    break_start: val("break_start") || null,
+    break_end: val("break_end") || null,
+    location: val("location"),
+    activity: val("activity"),
+  };
+
+  if (!payload.work_date) { setEditLogMsg("Seleziona la data.", "error"); return; }
+  if (!payload.location || !payload.activity) { setEditLogMsg("Compila luogo e attività.", "error"); return; }
+  const v = validateWorkLogLike(payload);
+  if (!v.ok) { setEditLogMsg(v.msg, "error"); return; }
+
+  if (editLogSaveBtn) { editLogSaveBtn.disabled = true; editLogSaveBtn.textContent = "Salvo..."; }
+  try {
+    // .select() restituisce le righe aggiornate: se è vuoto, Supabase non ha dato il permesso
+    const { data, error } = await supabaseClient
+      .from("work_logs")
+      .update(payload)
+      .eq("id", editLogId)
+      .select("id");
+
+    if (error) {
+      console.error(error);
+      setEditLogMsg(
+        error.code === "23505"
+          ? "Esiste già una registrazione con queste ore per questo luogo in questa data."
+          : "Errore durante il salvataggio. Riprova.",
+        "error"
+      );
+      return;
+    }
+    if (!data || data.length === 0) {
+      setEditLogMsg("Le modifiche non sono state salvate: il database non ha dato il permesso.", "error");
+      return;
+    }
+
+    // Se la nuova data è in un altro mese, mostra quel mese così la registrazione si ritrova subito
+    const newMonth = payload.work_date.slice(0, 7);
+    if (empHoursMonthEl && newMonth && empHoursMonthEl.value !== newMonth) empHoursMonthEl.value = newMonth;
+
+    closeEditLog();
+    await loadEmpHours();
+  } catch (err) {
+    console.error(err);
+    setEditLogMsg("Errore imprevisto. Riprova.", "error");
+  } finally {
+    if (editLogSaveBtn) { editLogSaveBtn.disabled = false; editLogSaveBtn.textContent = "Salva modifiche"; }
+  }
+});
 
 // Elimina UNA registrazione ore (una riga), dopo conferma
 async function deleteWorkLog(id, btn) {
