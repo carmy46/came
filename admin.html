@@ -65,6 +65,12 @@
         </div>
 
         <div class="section-head">
+          <h4>Ore da inserire</h4>
+          <span class="muted" id="ovMissingInfo"></span>
+        </div>
+        <div id="ovMissingList" class="ov-list">Caricamento...</div>
+
+        <div class="section-head">
           <h4>Ore per dipendente</h4>
           <button id="exportAllHoursBtn" class="btn small" type="button">Export Excel ore – tutti</button>
         </div>
@@ -97,6 +103,15 @@
                   <button class="tab active" type="button" data-emp-tab="hours">Ore</button>
                   <button class="tab" type="button" data-emp-tab="requests">Richieste</button>
                 </div>
+              </div>
+
+              <div class="emp-phone">
+                <label class="label" for="empPhone">Telefono (per WhatsApp)</label>
+                <div class="emp-phone-row">
+                  <input id="empPhone" class="input" type="tel" placeholder="Es. 333 1234567" maxlength="20" />
+                  <button id="empPhoneSave" class="btn small" type="button">Salva</button>
+                </div>
+                <p id="empPhoneMsg" class="msg"></p>
               </div>
 
               <!-- ORE -->
@@ -426,6 +441,7 @@
   <script src="js/supabaseClient.js"></script>
   <script src="js/guard.js"></script>
   <script src="js/notifications.js"></script>
+  <script src="js/missingHours.js"></script>
   <script src="js/admin.js"></script>
   <script src="js/adminAccounts.js"></script>
   <script>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'came-v33';
+const CACHE_NAME = 'came-v34';
 const STATIC_CACHE = [
   '/',
   '/index.html',
@@ -15,6 +15,7 @@ const STATIC_CACHE = [
   '/js/supabaseClient.js',
   '/js/export.js',
   '/js/notifications.js',
+  '/js/missingHours.js',
   '/js/projectReport.js'
 ];
 

@@ -3238,4 +3238,36 @@ body.page-admin .admin-table-head{ position: static; margin: 8px 0; }
   body.page-admin .toolbar > .toolbar-actions .btn{ flex: 1 1 0; }
   body.page-admin .ov-row{ grid-template-columns: 1fr auto; }
   body.page-admin .ov-row-days{ display: none; }
+  body.page-admin .ov-miss-row{ grid-template-columns: 1fr auto; row-gap: 2px; }
+  body.page-admin .ov-miss-row .ov-row-days{ display: block; grid-column: 1; grid-row: 2; font-size: 12px; }
+  body.page-admin .ov-miss-row > .btn{ grid-column: 2; grid-row: 1 / span 2; }
 }
+
+/* Panoramica: ore da inserire + promemoria WhatsApp */
+body.page-admin .ov-miss-row{ grid-template-columns: 1fr auto auto; cursor: default; }
+body.page-admin .ov-miss-row:hover{ background: rgba(255,255,255,.03); }
+body.page-admin .ov-miss-name{
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+body.page-admin .ov-miss-name:hover{ text-decoration: underline; }
+body.page-admin .wa-btn{
+  background: #25d366;
+  border-color: #25d366;
+  color: #0b2e1a;
+  font-weight: 800;
+  text-decoration: none;
+}
+body.page-admin .wa-btn:hover{ background: #2ee070; }
+
+/* Scheda dipendente: telefono */
+body.page-admin .emp-phone{ margin: 4px 0 14px; max-width: 360px; }
+body.page-admin .emp-phone-row{ display: flex; gap: 8px; }
+body.page-admin .emp-phone-row .input{ flex: 1 1 auto; min-width: 0; }
+body.page-admin .emp-phone .msg{ margin: 4px 0 0; }

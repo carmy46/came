@@ -145,7 +145,54 @@ function openEmployee({ id, full_name }) {
   setEmpTab("hours");
   loadEmpHours();
   loadEmpRequests();
+  loadEmpPhone();
 }
+
+// --- Telefono del dipendente (serve per il promemoria WhatsApp) ---
+const empPhoneEl = document.getElementById("empPhone");
+const empPhoneSaveBtn = document.getElementById("empPhoneSave");
+const empPhoneMsgEl = document.getElementById("empPhoneMsg");
+
+function setEmpPhoneMsg(text, kind) {
+  if (!empPhoneMsgEl) return;
+  empPhoneMsgEl.textContent = text || "";
+  empPhoneMsgEl.className = "msg" + (kind ? ` ${kind}` : "");
+}
+
+async function loadEmpPhone() {
+  const id = adminEmpSelected?.id;
+  if (!empPhoneEl || !id) return;
+  empPhoneEl.value = "";
+  setEmpPhoneMsg("");
+  try {
+    const { data, error } = await supabaseClient.from("profiles").select("phone").eq("id", id).single();
+    if (error) throw error;
+    if (adminEmpSelected?.id === id) empPhoneEl.value = data?.phone || "";
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+empPhoneSaveBtn?.addEventListener("click", async () => {
+  const id = adminEmpSelected?.id;
+  if (!id) return;
+  const phone = (empPhoneEl?.value || "").trim();
+  if (phone && !window.missingHours.waNumber(phone)) {
+    setEmpPhoneMsg("Numero non valido.", "error");
+    return;
+  }
+  empPhoneSaveBtn.disabled = true;
+  try {
+    const { error } = await supabaseClient.from("profiles").update({ phone: phone || null }).eq("id", id);
+    if (error) throw error;
+    setEmpPhoneMsg("Salvato ✅", "ok");
+  } catch (e) {
+    console.error(e);
+    setEmpPhoneMsg("Errore salvataggio telefono.", "error");
+  } finally {
+    empPhoneSaveBtn.disabled = false;
+  }
+});
 
 // Su telefono: torna dalla scheda all'elenco
 document.getElementById("empBackBtn")?.addEventListener("click", () => {
@@ -451,11 +498,15 @@ async function loadOverview() {
         : `<div class="empty-state">Nessuna ora registrata in ${escapeHtml(fmtMonthYear(ym))}.</div>`;
       bindOpenEmployeeButtons(listEl);
     }
+
+    loadMissingHours(ym, data || []);
   } catch (e) {
     console.error(e);
     set("ovMonthTotal", "—");
     set("ovTodayTotal", "—");
     if (listEl) listEl.textContent = "Errore caricamento ore.";
+    const missEl = document.getElementById("ovMissingList");
+    if (missEl) missEl.textContent = "Errore caricamento ore.";
   }
 
   // Richieste ancora da approvare (tutte, non solo del mese)
@@ -485,6 +536,91 @@ async function loadOverview() {
   } catch (e) {
     console.error(e);
     set("ovPendingOrders", "—");
+  }
+}
+
+// Panoramica: chi non ha ancora inserito le ore (lun–ven fino a ieri) + promemoria WhatsApp
+const APP_URL = "https://came-eta.vercel.app";
+
+function whatsappReminderLink(phone, fullName) {
+  const n = window.missingHours.waNumber(phone);
+  if (!n) return "";
+  const first = String(fullName || "").trim().split(/\s+/)[0] || "";
+  const text = `Ciao${first ? " " + first : ""}, ricordati di inserire le ore sull'app CAME: ${APP_URL}\nGrazie!`;
+  return `https://wa.me/${n}?text=${encodeURIComponent(text)}`;
+}
+
+async function loadMissingHours(ym, monthLogs) {
+  const el = document.getElementById("ovMissingList");
+  const infoEl = document.getElementById("ovMissingInfo");
+  if (!el) return;
+  el.textContent = "Caricamento...";
+  if (infoEl) infoEl.textContent = "";
+
+  try {
+    const { start, end } = monthRange(ym);
+    const [{ data: profiles, error: e1 }, { data: reqs, error: e2 }] = await Promise.all([
+      supabaseClient.from("profiles").select("id, full_name, role, phone, created_at"),
+      supabaseClient
+        .from("requests")
+        .select("user_id, type, status, start_date, end_date")
+        .in("type", ["ferie", "permesso_giornaliero"])
+        .neq("status", "rifiutata")
+        .lte("start_date", end),
+    ]);
+    if (e1) throw e1;
+    if (e2) throw e2;
+
+    const logsByUser = new Map(); // user_id -> Set(date)
+    for (const r of monthLogs) {
+      if (!logsByUser.has(r.user_id)) logsByUser.set(r.user_id, new Set());
+      logsByUser.get(r.user_id).add(r.work_date);
+    }
+
+    let checked = false;
+    const rows = [];
+    for (const p of (profiles || [])) {
+      if (!p?.id || String(p.role || "").toLowerCase() === "admin") continue;
+      const rg = window.missingHours.range(ym, p.created_at);
+      if (!rg) continue;
+      checked = true;
+      const days = window.missingHours.missingWeekdays({
+        from: rg.from,
+        to: rg.to,
+        loggedDates: logsByUser.get(p.id),
+        requests: (reqs || []).filter(r => r.user_id === p.id && (r.end_date || r.start_date) >= start),
+      });
+      if (days.length) rows.push({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", phone: p.phone, count: days.length });
+    }
+
+    if (!checked) {
+      el.innerHTML = `<div class="empty-state">Niente da controllare per ${escapeHtml(fmtMonthYear(ym))}.</div>`;
+      return;
+    }
+    if (!rows.length) {
+      el.innerHTML = `<div class="empty-state">Tutti in regola ✅</div>`;
+      return;
+    }
+
+    rows.sort((a, b) => b.count - a.count || a.full_name.localeCompare(b.full_name, "it", { sensitivity: "base" }));
+    if (infoEl) infoEl.textContent = `${rows.length} dipendent${rows.length === 1 ? "e" : "i"}`;
+
+    el.innerHTML = rows.map(r => {
+      const link = whatsappReminderLink(r.phone, r.full_name);
+      const action = link
+        ? `<a class="btn small wa-btn" href="${escapeHtml(link)}" target="_blank" rel="noopener">WhatsApp</a>`
+        : `<button class="btn small ghost" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">Aggiungi numero</button>`;
+      return `
+        <div class="ov-row ov-miss-row">
+          <button class="ov-miss-name" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">${escapeHtml(r.full_name)}</button>
+          <span class="ov-row-days">${r.count} giorn${r.count === 1 ? "o" : "i"} senza ore</span>
+          ${action}
+        </div>`;
+    }).join("");
+    bindOpenEmployeeButtons(el);
+  } catch (e) {
+    console.error(e);
+    el.textContent = "Errore caricamento.";
   }
 }
 
