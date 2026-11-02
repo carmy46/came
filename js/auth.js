@@ -75,11 +75,17 @@ loginBtn?.addEventListener("click", async () => {
     }
 
     let signedIn = false;
+    let banned = false; // account disattivato dall'admin (ex dipendente)
     for (const c of candidates) {
       const { error } = await window.supabaseClient.auth.signInWithPassword({ email: c.email, password: c.password });
       if (!error) { signedIn = true; break; }
+      if (error.code === "user_banned" || /banned/i.test(error.message || "")) banned = true;
     }
 
+    if (banned && !signedIn) {
+      setMsg("Questo account è stato disattivato. Per informazioni contatta l'amministratore.", "error");
+      return;
+    }
     if (!signedIn) {
       setMsg("Credenziali non valide o utente non esistente.", "error");
       return;

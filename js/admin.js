@@ -157,19 +157,68 @@ function setEmpPhoneMsg(text, kind) {
   empPhoneMsgEl.className = "msg" + (kind ? ` ${kind}` : "");
 }
 
+// Telefono + stato account (attivo / ex dipendente) del dipendente aperto
 async function loadEmpPhone() {
   const id = adminEmpSelected?.id;
   if (!empPhoneEl || !id) return;
   empPhoneEl.value = "";
   setEmpPhoneMsg("");
+  setEmpActiveUi(null);
   try {
-    const { data, error } = await supabaseClient.from("profiles").select("phone").eq("id", id).single();
+    const { data, error } = await supabaseClient.from("profiles").select("phone, active").eq("id", id).single();
     if (error) throw error;
-    if (adminEmpSelected?.id === id) empPhoneEl.value = data?.phone || "";
+    if (adminEmpSelected?.id !== id) return;
+    empPhoneEl.value = data?.phone || "";
+    setEmpActiveUi(data?.active !== false);
   } catch (e) {
     console.error(e);
   }
 }
+
+// --- Disattiva / riattiva account (ex dipendente): lo fa la Edge Function "set-employee-active" ---
+const empActiveToggleBtn = document.getElementById("empActiveToggle");
+const empInactiveNoteEl = document.getElementById("empInactiveNote");
+
+function setEmpActiveUi(active) {
+  if (adminEmpSelected) adminEmpSelected.active = active;
+  if (empInactiveNoteEl) empInactiveNoteEl.hidden = active !== false;
+  if (!empActiveToggleBtn) return;
+  empActiveToggleBtn.hidden = active === null;
+  empActiveToggleBtn.disabled = false;
+  empActiveToggleBtn.textContent = active === false ? "Riattiva account" : "Disattiva account";
+  empActiveToggleBtn.classList.toggle("is-reactivate", active === false);
+}
+
+empActiveToggleBtn?.addEventListener("click", async () => {
+  const emp = adminEmpSelected;
+  if (!emp?.id || typeof emp.active !== "boolean") return;
+  const activate = !emp.active;
+  const question = activate
+    ? `Riattivare l'account di ${emp.full_name}?\n\nPotrà di nuovo entrare nell'app con il suo username e la sua password.`
+    : `Disattivare l'account di ${emp.full_name}?\n\nNon potrà più entrare nell'app.\nLe sue ore, richieste e ordini restano salvati, e potrai riattivarlo quando vuoi.`;
+  if (!confirm(question)) return;
+
+  empActiveToggleBtn.disabled = true;
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("set-employee-active", {
+      body: { user_id: emp.id, active: activate },
+    });
+    if (error) {
+      let msg = "Operazione non riuscita. Riprova.";
+      try { msg = (await error.context.json())?.error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+    if (data?.error) throw new Error(data.error);
+
+    setEmpActiveUi(activate);
+    await loadEmployees();
+    markSelectedEmployee();
+  } catch (e) {
+    console.error(e);
+    alert(e.message || "Operazione non riuscita. Riprova.");
+    empActiveToggleBtn.disabled = false;
+  }
+});
 
 empPhoneSaveBtn?.addEventListener("click", async () => {
   const id = adminEmpSelected?.id;
@@ -354,7 +403,7 @@ async function loadEmployees() {
     // di default: role=employee (se nel DB è impostato così)
     let { data, error } = await supabaseClient
       .from("profiles")
-      .select("id, full_name, role")
+      .select("id, full_name, role, active")
       .eq("role", "employee")
       .order("full_name", { ascending: true });
 
@@ -362,7 +411,7 @@ async function loadEmployees() {
     if (!error && (!data || data.length === 0)) {
       const res = await supabaseClient
         .from("profiles")
-        .select("id, full_name, role")
+        .select("id, full_name, role, active")
         .order("full_name", { ascending: true });
       data = res.data;
       error = res.error;
@@ -372,9 +421,10 @@ async function loadEmployees() {
 
     adminEmployees = (data || [])
       .filter(p => p && p.id && String(p.role || "").toLowerCase() !== "admin")
-      .map(p => ({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome" }));
+      .map(p => ({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", active: p.active !== false }));
 
-    if (adminEmployeesCountEl) adminEmployeesCountEl.textContent = `${adminEmployees.length} account`;
+    const activeCount = adminEmployees.filter(p => p.active).length;
+    if (adminEmployeesCountEl) adminEmployeesCountEl.textContent = `${activeCount} attiv${activeCount === 1 ? "o" : "i"}`;
     renderEmployeesChips();
 
   } catch (e) {
@@ -395,11 +445,22 @@ function renderEmployeesChips() {
     return;
   }
 
-  adminEmployeesChipsEl.innerHTML = filtered.map(p => `
-    <button class="emp-list-item" type="button" data-open-emp data-emp-id="${escapeHtml(p.id)}" data-emp-name="${escapeHtml(p.full_name)}">
+  const itemHtml = (p) => `
+    <button class="emp-list-item${p.active ? "" : " is-inactive"}" type="button" data-open-emp data-emp-id="${escapeHtml(p.id)}" data-emp-name="${escapeHtml(p.full_name)}">
       ${escapeHtml(p.full_name)}
     </button>
-  `).join("");
+  `;
+  const activeList = filtered.filter(p => p.active);
+  const exList = filtered.filter(p => !p.active);
+
+  // Ex dipendenti (account disattivati) in fondo, chiusi: restano consultabili per lo storico
+  adminEmployeesChipsEl.innerHTML =
+    (activeList.length ? activeList.map(itemHtml).join("") : `<div class="muted">Nessun dipendente attivo.</div>`) +
+    (exList.length ? `
+      <details class="emp-ex"${q ? " open" : ""}>
+        <summary>Ex dipendenti (${exList.length})</summary>
+        ${exList.map(itemHtml).join("")}
+      </details>` : "");
 
   bindOpenEmployeeButtons(adminEmployeesChipsEl);
   markSelectedEmployee();
@@ -541,7 +602,7 @@ async function loadMissingHours(ym, monthLogs) {
   try {
     const { start, end } = monthRange(ym);
     const [{ data: profiles, error: e1 }, { data: reqs, error: e2 }] = await Promise.all([
-      supabaseClient.from("profiles").select("id, full_name, role, phone, created_at"),
+      supabaseClient.from("profiles").select("id, full_name, role, phone, created_at, active"),
       supabaseClient
         .from("requests")
         .select("user_id, type, status, start_date, end_date")
@@ -561,7 +622,7 @@ async function loadMissingHours(ym, monthLogs) {
     let checked = false;
     const rows = [];
     for (const p of (profiles || [])) {
-      if (!p?.id || String(p.role || "").toLowerCase() === "admin") continue;
+      if (!p?.id || String(p.role || "").toLowerCase() === "admin" || p.active === false) continue;
       const rg = window.missingHours.range(ym, p.created_at);
       if (!rg) continue;
       checked = true;

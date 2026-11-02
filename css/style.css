@@ -3359,8 +3359,32 @@ body.page-admin .wa-btn{
 }
 body.page-admin .wa-btn:hover{ background: #2ee070; }
 
+/* Ex dipendenti (account disattivati) */
+body.page-admin .emp-ex{ margin-top: 6px; border-top: 1px solid var(--gb); padding-top: 6px; }
+body.page-admin .emp-ex > summary{
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 4px;
+}
+body.page-admin .emp-list-item.is-inactive{ color: var(--muted); }
+body.page-admin .emp-active-toggle{ margin-left: auto; color: var(--danger); border-color: rgba(240,119,111,.4); }
+body.page-admin .emp-active-toggle.is-reactivate{ color: var(--accent2); border-color: rgba(95,201,232,.45); }
+body.page-admin .emp-active-toggle[hidden]{ display: none; }
+body.page-admin .emp-inactive-note{
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border: 1px solid rgba(240,119,111,.4);
+  border-radius: 12px;
+  background: rgba(240,119,111,.1);
+  font-size: 14px;
+}
+body.page-admin .emp-inactive-note[hidden]{ display: none; }
+
 /* Scheda dipendente: telefono */
 body.page-admin .emp-phone{ margin: 4px 0 14px; max-width: 360px; }
 body.page-admin .emp-phone-row{ display: flex; gap: 8px; }
 body.page-admin .emp-phone-row .input{ flex: 1 1 auto; min-width: 0; }
 body.page-admin .emp-phone .msg{ margin: 4px 0 0; }
+body.page-admin .emp-phone .msg:empty{ display: none; }
