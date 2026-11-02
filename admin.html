@@ -16,165 +16,199 @@
 <body class="page-admin">
   <header class="topbar">
     <div class="topbar-left">
-      <h2>CAME – Amministratore</h2>
-      <div class="topbar-sub">Dashboard Pro</div>
+      <h2 id="adminHomeLink">CAME – Amministratore</h2>
     </div>
     <div class="topbar-actions">
       <button id="logoutBtn" class="btn small">Logout</button>
     </div>
   </header>
 
-  <main class="admin-layout">
-    <aside class="sidebar">
-      <div class="sidebar-title">Dipendenti</div>
-      <button class="nav-btn active" data-view="hours" style="display:none;">Ore</button>
-      <button class="nav-btn" data-view="requests" style="display:none;">Richieste</button>
-      <button class="nav-btn" data-view="products">Prodotti</button>
-      <button class="nav-btn" data-view="catalog">Cataloghi</button>
+  <!-- Menu sezioni: in alto su computer, barra in fondo su telefono -->
+  <nav class="admin-nav" aria-label="Sezioni">
+    <button class="nav-btn active" type="button" data-view="overview">Panoramica</button>
+    <button class="nav-btn" type="button" data-view="employees">Dipendenti</button>
+    <button class="nav-btn" type="button" data-view="requests">Richieste</button>
+    <button class="nav-btn" type="button" data-view="products">Prodotti</button>
+    <button class="nav-btn" type="button" data-view="catalog">Cataloghi</button>
+  </nav>
 
-      <!-- Dipendenti (spostato in sidebar per semplificare la pagina) -->
-      <div id="adminEmployeesBar" class="card admin-employees-bar">
-        <div class="admin-employees-bar-head">
-          <div>
-            <div style="font-weight:900;">Dipendenti</div>
-            <div id="adminEmployeesCount" class="muted" style="margin:4px 0 0;">—</div>
-          </div>
-          <div>
-            <label class="label" style="margin-top:0;">Cerca</label>
-            <input id="adminEmployeesSearch" class="input" type="text" placeholder="Es. Mario" />
-          </div>
-        </div>
-        <button id="newEmployeeBtn" class="btn small" type="button" style="width:100%; margin:10px 0;">+ Nuovo dipendente</button>
-        <div id="adminEmployeesChips" class="chips">Caricamento...</div>
-      </div>
-    </aside>
-
+  <main class="admin-main">
     <section class="content">
-      <!-- Vista iniziale (soluzione B): scegli un dipendente -->
-      <div id="view-pick" class="view active">
-        <h3>Seleziona un dipendente</h3>
-        <div class="card">
-          <p class="muted" style="margin:0;">
-            Scegli un nome nella colonna a sinistra per vedere <strong>Ore</strong> e <strong>Richieste</strong> di quella persona.
-          </p>
-          <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button id="openProductsBtn" class="btn" type="button">Apri Prodotti (dashboard)</button>
-          </div>
-        </div>
 
-        <div class="card" style="margin-top:14px;">
-          <div style="font-weight:800; font-size:15px; margin-bottom:10px;">Export Ore – Tutti i dipendenti</div>
-          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
-            <div>
-              <label class="label">Mese</label>
-              <input class="input" type="month" id="exportAllMonthPicker" />
-            </div>
-            <button id="exportAllHoursBtn" class="btn" type="button">Export Excel (tutti)</button>
-          </div>
-          <p class="muted" style="font-size:13px; margin-top:10px; margin-bottom:0;">
-            Genera un file Excel con un foglio per ogni dipendente + foglio di riepilogo generale.
-          </p>
-        </div>
-      </div>
-
-      <div id="view-hours" class="view">
+      <!-- PANORAMICA -->
+      <div id="view-overview" class="view active">
         <div class="view-head">
-          <h3>Registrazioni ore</h3>
-          <button class="btn small" type="button" data-admin-back>← Torna indietro</button>
-        </div>
-
-        <div class="filters card">
-          <div>
-            <label class="label">Mese</label>
-            <input class="input" type="month" id="adminMonthPicker" />
+          <h3>Panoramica</h3>
+          <div class="month-field">
+            <label class="label" for="overviewMonth">Mese</label>
+            <input class="input" type="month" id="overviewMonth" />
           </div>
+        </div>
 
-          <div class="stats">
-            <div class="stat">
-              <div class="muted">Totale mese (tutti)</div>
-              <div id="adminMonthTotal" class="statValue">—</div>
-            </div>
-            <div class="stat">
-              <div class="muted">Totale oggi (tutti)</div>
-              <div id="adminTodayTotal" class="statValue">—</div>
-            </div>
+        <div class="ov-kpis">
+          <button class="kpi kpi-link" type="button" data-ov-go="employees">
+            <span class="kpi-label">Ore del mese</span>
+            <span class="kpi-value" id="ovMonthTotal">—</span>
+          </button>
+          <div class="kpi">
+            <span class="kpi-label">Ore di oggi</span>
+            <span class="kpi-value" id="ovTodayTotal">—</span>
           </div>
-
-          <button id="adminExportXlsxBtn" class="btn small" type="button">Export Excel (mese)</button>
+          <button class="kpi kpi-link" type="button" data-ov-go="requests">
+            <span class="kpi-label">Richieste da approvare</span>
+            <span class="kpi-value" id="ovPendingRequests">—</span>
+          </button>
+          <button class="kpi kpi-link" type="button" data-ov-go="products">
+            <span class="kpi-label">Ordini da consegnare</span>
+            <span class="kpi-value" id="ovPendingOrders">—</span>
+          </button>
         </div>
 
-        <div class="admin-hours-tools">
-          <button id="adminHoursExpandAllBtn" class="btn small" type="button">Apri tutti</button>
-          <button id="adminHoursCollapseAllBtn" class="btn small" type="button">Chiudi tutti</button>
+        <div class="section-head">
+          <h4>Ore per dipendente</h4>
+          <button id="exportAllHoursBtn" class="btn small" type="button">Export Excel ore – tutti</button>
         </div>
-
-        <div class="table-head admin-table-head hours" aria-hidden="true">
-          <div>Data / Orari</div>
-          <div>Luogo / Attività</div>
-          <div style="text-align:right;">Totale ore</div>
-        </div>
-        <div id="hoursList">Caricamento...</div>
+        <div id="ovEmployeesList" class="ov-list">Caricamento...</div>
       </div>
 
+      <!-- DIPENDENTI: elenco a sinistra, scheda a destra -->
+      <div id="view-employees" class="view">
+        <div class="emp-split">
+          <aside class="emp-list-panel">
+            <div class="emp-list-head">
+              <h3>Dipendenti</h3>
+              <span id="adminEmployeesCount" class="muted">—</span>
+            </div>
+            <input id="adminEmployeesSearch" class="input" type="search" placeholder="Cerca per nome" aria-label="Cerca dipendente" />
+            <button id="newEmployeeBtn" class="btn small" type="button">+ Nuovo dipendente</button>
+            <div id="adminEmployeesChips" class="emp-list">Caricamento...</div>
+          </aside>
+
+          <div class="emp-detail">
+            <div id="empEmpty" class="empty-state">
+              Scegli un dipendente dall'elenco per vedere le sue ore e le sue richieste.
+            </div>
+
+            <div id="empPanel" hidden>
+              <div class="emp-detail-head">
+                <button id="empBackBtn" class="btn small emp-back" type="button">← Dipendenti</button>
+                <h3 id="adminEmpModalName">—</h3>
+                <div class="seg" role="tablist">
+                  <button class="tab active" type="button" data-emp-tab="hours">Ore</button>
+                  <button class="tab" type="button" data-emp-tab="requests">Richieste</button>
+                </div>
+              </div>
+
+              <!-- ORE -->
+              <div id="emp-tab-hours" class="emp-tab active">
+                <div class="toolbar">
+                  <div class="month-field">
+                    <label class="label" for="empHoursMonth">Mese</label>
+                    <input class="input" type="month" id="empHoursMonth" />
+                  </div>
+                  <div class="toolbar-total">
+                    <span class="muted">Totale mese</span>
+                    <strong id="empHoursMonthTotal">—</strong>
+                  </div>
+                  <button id="empHoursExportXlsxBtn" class="btn small" type="button">Export Excel</button>
+                </div>
+                <div class="table-head admin-table-head hours" aria-hidden="true">
+                  <div>Orari</div>
+                  <div>Luogo / Attività</div>
+                  <div style="text-align:right;">Ore</div>
+                  <div></div>
+                </div>
+                <div id="empHoursList">—</div>
+              </div>
+
+              <!-- RICHIESTE -->
+              <div id="emp-tab-requests" class="emp-tab">
+                <div class="toolbar">
+                  <div>
+                    <label class="label" for="empReqStatus">Stato</label>
+                    <select id="empReqStatus" class="input">
+                      <option value="">Tutti</option>
+                      <option value="inviata">Inviata</option>
+                      <option value="approvata">Approvata</option>
+                      <option value="rifiutata">Rifiutata</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="label" for="empReqType">Tipo</label>
+                    <select id="empReqType" class="input">
+                      <option value="">Tutti</option>
+                      <option value="ferie">Ferie</option>
+                      <option value="permesso_giornaliero">Permesso giornaliero</option>
+                      <option value="uscita_anticipata">Uscita anticipata</option>
+                      <option value="entrata_posticipata">Entrata posticipata</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="label" for="empReqMonth">Mese</label>
+                    <input id="empReqMonth" class="input" type="month" />
+                  </div>
+                  <div class="toolbar-actions">
+                    <button id="empReqReset" class="btn small ghost" type="button">Reset</button>
+                    <button id="empReqExportXlsxBtn" class="btn small" type="button">Export Excel</button>
+                  </div>
+                </div>
+                <p class="muted toolbar-info" id="empReqInfo"></p>
+                <div class="table-head admin-table-head requests" aria-hidden="true">
+                  <div>Tipo</div>
+                  <div>Quando / Nota</div>
+                  <div style="text-align:right;">Stato</div>
+                </div>
+                <div id="empRequestsList">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RICHIESTE (tutti i dipendenti) -->
       <div id="view-requests" class="view">
         <div class="view-head">
           <h3>Richieste</h3>
-          <button class="btn small" type="button" data-admin-back>← Torna indietro</button>
         </div>
 
-        <details class="admin-filters-toggle" open>
-          <summary>Filtri richieste</summary>
-          <div class="filters card" style="margin-bottom:12px;">
-          <div class="grid2" style="margin-top:0;">
-            <div>
-              <label class="label">Stato</label>
-              <select id="reqFilterStatus" class="input">
-                <option value="">Tutti</option>
-                <option value="inviata">Inviata</option>
-                <option value="approvata">Approvata</option>
-                <option value="rifiutata">Rifiutata</option>
-              </select>
-            </div>
-            <div>
-              <label class="label">Tipo</label>
-              <select id="reqFilterType" class="input">
-                <option value="">Tutti</option>
-                <option value="ferie">Ferie</option>
-                <option value="permesso_giornaliero">Permesso giornaliero</option>
-                <option value="uscita_anticipata">Uscita anticipata</option>
-                <option value="entrata_posticipata">Entrata posticipata</option>
-              </select>
-            </div>
+        <div class="toolbar">
+          <div>
+            <label class="label" for="reqFilterStatus">Stato</label>
+            <select id="reqFilterStatus" class="input">
+              <option value="">Tutti</option>
+              <option value="inviata">Inviata</option>
+              <option value="approvata">Approvata</option>
+              <option value="rifiutata">Rifiutata</option>
+            </select>
           </div>
-
-          <div class="grid2" style="margin-top:10px;">
-            <div>
-              <label class="label">Mese (data richiesta)</label>
-              <input id="reqFilterMonth" class="input" type="month" />
-            </div>
-            <div>
-              <label class="label">Cerca dipendente (nome)</label>
-              <input id="reqFilterEmployee" class="input" type="text" placeholder="Es. Mario" />
-            </div>
+          <div>
+            <label class="label" for="reqFilterType">Tipo</label>
+            <select id="reqFilterType" class="input">
+              <option value="">Tutti</option>
+              <option value="ferie">Ferie</option>
+              <option value="permesso_giornaliero">Permesso giornaliero</option>
+              <option value="uscita_anticipata">Uscita anticipata</option>
+              <option value="entrata_posticipata">Entrata posticipata</option>
+            </select>
           </div>
-
-          <div class="grid2" style="margin-top:10px;">
-            <button id="reqFiltersReset" class="btn small" type="button">Reset filtri</button>
-            <button id="reqFiltersApply" class="btn small" type="button">Applica</button>
+          <div>
+            <label class="label" for="reqFilterMonth">Mese</label>
+            <input id="reqFilterMonth" class="input" type="month" />
           </div>
-
-          <div class="grid2" style="margin-top:10px;">
+          <div>
+            <label class="label" for="reqFilterEmployee">Dipendente</label>
+            <input id="reqFilterEmployee" class="input" type="search" placeholder="Es. Mario" />
+          </div>
+          <div class="toolbar-actions">
+            <button id="reqFiltersReset" class="btn small ghost" type="button">Reset</button>
             <button id="adminReqExportXlsxBtn" class="btn small" type="button">Export Excel</button>
-            <div></div>
           </div>
-
-          <p class="muted" style="margin-top:10px;" id="reqFiltersInfo"></p>
-          </div>
-        </details>
+        </div>
+        <p class="muted toolbar-info" id="reqFiltersInfo"></p>
 
         <div class="admin-hours-tools">
-          <button id="adminReqExpandAllBtn" class="btn small" type="button">Apri tutti</button>
-          <button id="adminReqCollapseAllBtn" class="btn small" type="button">Chiudi tutti</button>
+          <button id="adminReqExpandAllBtn" class="btn small ghost" type="button">Apri tutti</button>
+          <button id="adminReqCollapseAllBtn" class="btn small ghost" type="button">Chiudi tutti</button>
         </div>
 
         <div class="table-head admin-table-head requests" aria-hidden="true">
@@ -185,10 +219,10 @@
         <div id="requestsList">Caricamento...</div>
       </div>
 
+      <!-- PRODOTTI -->
       <div id="view-products" class="view">
         <div class="view-head">
           <h3>Prodotti</h3>
-          <button class="btn small" type="button" data-admin-back>← Torna indietro</button>
         </div>
 
         <!-- Barra periodo + azioni principali -->
@@ -230,34 +264,24 @@
         </div>
 
         <!-- Filtri di ricerca (restringono solo l'elenco qui sotto) -->
-        <details class="admin-filters-toggle">
-          <summary>Filtri di ricerca</summary>
-          <div class="filters card" style="margin-bottom:12px;">
-            <div class="grid2" style="margin-top:0;">
-              <div>
-                <label class="label">Cerca dipendente</label>
-                <input id="poFilterEmployee" class="input" type="text" placeholder="Es. Mario" />
-              </div>
-              <div>
-                <label class="label">Cerca luogo</label>
-                <input id="poFilterPlace" class="input" type="text" placeholder="Es. B&B..." />
-              </div>
-            </div>
-
-            <div class="grid2" style="margin-top:10px;">
-              <div>
-                <label class="label">Cerca prodotto</label>
-                <input id="poFilterProduct" class="input" type="text" placeholder="Es. Carta..." />
-              </div>
-              <div class="po-filter-actions">
-                <button id="poFiltersApply" class="btn small" type="button">Applica</button>
-                <button id="poFiltersReset" class="btn small ghost" type="button">Reset</button>
-              </div>
-            </div>
-
-            <p class="muted" style="margin-top:10px;" id="poFiltersInfo"></p>
+        <div class="toolbar">
+          <div>
+            <label class="label" for="poFilterEmployee">Dipendente</label>
+            <input id="poFilterEmployee" class="input" type="search" placeholder="Es. Mario" />
           </div>
-        </details>
+          <div>
+            <label class="label" for="poFilterPlace">Luogo</label>
+            <input id="poFilterPlace" class="input" type="search" placeholder="Es. B&B..." />
+          </div>
+          <div>
+            <label class="label" for="poFilterProduct">Prodotto</label>
+            <input id="poFilterProduct" class="input" type="search" placeholder="Es. Carta..." />
+          </div>
+          <div class="toolbar-actions">
+            <button id="poFiltersReset" class="btn small ghost" type="button">Reset</button>
+          </div>
+        </div>
+        <p class="muted toolbar-info" id="poFiltersInfo"></p>
 
         <!-- Coda di lavoro: filtra l'elenco per stato consegna (non tocca KPI/export) -->
         <div class="chips po-status-chips">
@@ -266,18 +290,13 @@
           <button class="chip" type="button" data-po-status="delivered">Consegnati</button>
         </div>
 
-        <div class="admin-hours-tools">
-          <button id="adminProdExpandAllBtn" class="btn small" type="button">Apri tutti</button>
-          <button id="adminProdCollapseAllBtn" class="btn small" type="button">Chiudi tutti</button>
-        </div>
-
         <div id="productsList">Caricamento...</div>
       </div>
 
+      <!-- CATALOGHI -->
       <div id="view-catalog" class="view">
         <div class="view-head">
-          <h3>Gestisci cataloghi</h3>
-          <button class="btn small" type="button" data-admin-back>← Torna indietro</button>
+          <h3>Cataloghi</h3>
         </div>
 
         <p class="muted" style="margin:0 0 12px;">
@@ -292,16 +311,16 @@
           <button class="chip" type="button" data-catalog-tab="activity">Attività</button>
         </div>
 
-        <div class="filters card" style="margin-top:12px;">
-          <div class="grid2" style="margin-top:0;">
-            <div>
-              <label class="label">Aggiungi una voce</label>
-              <input id="catalogNewName" class="input" type="text" placeholder="Es. nuovo prodotto..." />
-            </div>
+        <div class="toolbar" style="margin-top:12px;">
+          <div class="toolbar-grow">
+            <label class="label" for="catalogNewName">Aggiungi una voce</label>
+            <input id="catalogNewName" class="input" type="text" placeholder="Es. nuovo prodotto..." />
+          </div>
+          <div class="toolbar-actions">
             <button id="catalogAddBtn" class="btn small" type="button">+ Aggiungi</button>
           </div>
-          <p id="catalogMsg" class="msg"></p>
         </div>
+        <p id="catalogMsg" class="msg"></p>
 
         <div id="catalogList" style="margin-top:12px;">Caricamento...</div>
       </div>
@@ -349,98 +368,6 @@
     </div>
   </div>
 
-  <!-- Scheda dipendente (modale) -->
-  <div id="adminEmployeeModal" class="modal as-page" aria-hidden="true">
-    <div class="modal-backdrop" data-emp-modal-close></div>
-    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Scheda dipendente">
-      <div class="modal-head">
-        <div>
-          <div class="muted" style="margin:0;">Scheda dipendente</div>
-          <div id="adminEmpModalName" style="font-weight:900; font-size:16px; margin-top:2px;">—</div>
-        </div>
-        <button class="btn small" type="button" data-emp-modal-close>Cambia dipendente</button>
-      </div>
-
-      <div class="tabs" style="top: 0; position: static; margin: 10px 0 12px;">
-        <button class="tab active" type="button" data-emp-tab="hours">Ore</button>
-        <button class="tab" type="button" data-emp-tab="requests">Richieste</button>
-      </div>
-
-      <!-- ORE -->
-      <div id="emp-tab-hours" class="emp-tab active">
-        <div class="filters card" style="margin-bottom:12px;">
-          <div>
-            <label class="label">Mese</label>
-            <input class="input" type="month" id="empHoursMonth" />
-          </div>
-          <div class="stats">
-            <div class="stat">
-              <div class="muted">Totale mese</div>
-              <div id="empHoursMonthTotal" class="statValue">—</div>
-            </div>
-          </div>
-          <button id="empHoursExportXlsxBtn" class="btn small" type="button">Export Excel</button>
-        </div>
-        <div class="table-head admin-table-head hours" aria-hidden="true">
-          <div>Data / Orari</div>
-          <div>Luogo / Attività</div>
-          <div style="text-align:right;">Totale ore</div>
-        </div>
-        <div id="empHoursList">—</div>
-      </div>
-
-      <!-- RICHIESTE -->
-      <div id="emp-tab-requests" class="emp-tab">
-        <div class="filters card" style="margin-bottom:12px;">
-          <div class="grid2" style="margin-top:0;">
-            <div>
-              <label class="label">Stato</label>
-              <select id="empReqStatus" class="input">
-                <option value="">Tutti</option>
-                <option value="inviata">Inviata</option>
-                <option value="approvata">Approvata</option>
-                <option value="rifiutata">Rifiutata</option>
-              </select>
-            </div>
-            <div>
-              <label class="label">Tipo</label>
-              <select id="empReqType" class="input">
-                <option value="">Tutti</option>
-                <option value="ferie">Ferie</option>
-                <option value="permesso_giornaliero">Permesso giornaliero</option>
-                <option value="uscita_anticipata">Uscita anticipata</option>
-                <option value="entrata_posticipata">Entrata posticipata</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid2" style="margin-top:10px;">
-            <div>
-              <label class="label">Mese (data richiesta)</label>
-              <input id="empReqMonth" class="input" type="month" />
-            </div>
-            <div></div>
-          </div>
-          <div class="grid2" style="margin-top:10px;">
-            <button id="empReqReset" class="btn small" type="button">Reset</button>
-            <button id="empReqApply" class="btn small" type="button">Applica</button>
-          </div>
-          <div class="grid2" style="margin-top:10px;">
-            <button id="empReqExportXlsxBtn" class="btn small" type="button">Export Excel</button>
-            <div></div>
-          </div>
-          <p class="muted" style="margin-top:10px;" id="empReqInfo"></p>
-        </div>
-        <div class="table-head admin-table-head requests" aria-hidden="true">
-          <div>Tipo</div>
-          <div>Quando / Nota</div>
-          <div style="text-align:right;">Stato</div>
-        </div>
-        <div id="empRequestsList">—</div>
-      </div>
-
-    </div>
-  </div>
-
   <!-- Export libs -->
   <!-- xlsx-js-style: fork di SheetJS che SCRIVE gli stili nel file (colori, bordi, grassetti).
        La versione "xlsx" ufficiale li ignora in scrittura. Stesso API (window.XLSX). -->
@@ -466,4 +393,3 @@
   </script>
 </body>
 </html>
-

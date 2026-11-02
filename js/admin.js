@@ -71,14 +71,12 @@ function getCurrentMonthISO() {
   return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}`;
 }
 
-let adminCurrentMonthRows = [];
-let adminOpenEmployeeKeys = new Set(); // per ricordare quali dipendenti sono aperti (UI)
-let adminOpenRequestEmployeeKeys = new Set();
+let adminOpenRequestEmployeeKeys = new Set(); // per ricordare quali dipendenti sono aperti (UI)
 let adminOpenProductEmployeeKeys = new Set();
 let adminCurrentRequestRows = [];
 let adminCurrentProductGroups = [];
 
-// Dipendenti (barra + scheda dipendente)
+// Dipendenti (elenco + scheda dipendente)
 let adminEmployees = []; // [{ id, full_name }]
 let adminEmpSelected = null; // { id, full_name }
 let empHoursRows = [];
@@ -86,13 +84,15 @@ let empReqRows = [];
 
 const logoutBtn = document.getElementById("logoutBtn");
 
-// --- Barra dipendenti (sempre visibile) ---
+// --- Elenco dipendenti (sezione Dipendenti) ---
 const adminEmployeesCountEl = document.getElementById("adminEmployeesCount");
 const adminEmployeesSearchEl = document.getElementById("adminEmployeesSearch");
 const adminEmployeesChipsEl = document.getElementById("adminEmployeesChips");
 
-// --- Modale scheda dipendente ---
-const adminEmployeeModalEl = document.getElementById("adminEmployeeModal");
+// --- Scheda dipendente (colonna di destra) ---
+const empSplitEl = document.querySelector("#view-employees .emp-split");
+const empEmptyEl = document.getElementById("empEmpty");
+const empPanelEl = document.getElementById("empPanel");
 const adminEmpModalNameEl = document.getElementById("adminEmpModalName");
 
 const empHoursMonthEl = document.getElementById("empHoursMonth");
@@ -104,12 +104,9 @@ const empReqStatusEl = document.getElementById("empReqStatus");
 const empReqTypeEl = document.getElementById("empReqType");
 const empReqMonthEl = document.getElementById("empReqMonth");
 const empReqResetBtn = document.getElementById("empReqReset");
-const empReqApplyBtn = document.getElementById("empReqApply");
 const empReqExportXlsxBtn = document.getElementById("empReqExportXlsxBtn");
 const empReqInfoEl = document.getElementById("empReqInfo");
 const empRequestsListEl = document.getElementById("empRequestsList");
-
-const openProductsBtn = document.getElementById("openProductsBtn");
 
 logoutBtn?.addEventListener("click", async () => {
   try { await window.supabaseClient.auth.signOut(); } catch (_) {}
@@ -127,7 +124,8 @@ function setEmpTab(tab) {
   document.getElementById(`emp-tab-${t}`)?.classList.add("active");
 }
 
-function openEmployeeModal({ id, full_name }) {
+// Apre la scheda di un dipendente nella sezione Dipendenti
+function openEmployee({ id, full_name }) {
   if (!id) return;
   adminEmpSelected = { id, full_name: (full_name || "").trim() || "Senza nome" };
 
@@ -137,28 +135,30 @@ function openEmployeeModal({ id, full_name }) {
   if (empHoursMonthEl && !empHoursMonthEl.value) empHoursMonthEl.value = getCurrentMonthISO();
   if (empReqMonthEl && !empReqMonthEl.value) empReqMonthEl.value = "";
 
-  // apri modale
-  if (adminEmployeeModalEl) {
-    adminEmployeeModalEl.classList.add("open");
-    adminEmployeeModalEl.setAttribute("aria-hidden", "false");
-  }
-
-  // blocca scroll della pagina sotto (così non “si muove” mentre scorri la scheda)
-  lockBodyScroll();
+  showView("employees");
+  if (empEmptyEl) empEmptyEl.hidden = true;
+  if (empPanelEl) empPanelEl.hidden = false;
+  empSplitEl?.classList.add("has-selection"); // su telefono: mostra la scheda al posto dell'elenco
+  markSelectedEmployee();
+  window.scrollTo(0, 0);
 
   setEmpTab("hours");
   loadEmpHours();
   loadEmpRequests();
 }
 
-function closeEmployeeModal() {
-  if (!adminEmployeeModalEl) return;
-  adminEmployeeModalEl.classList.remove("open");
-  adminEmployeeModalEl.setAttribute("aria-hidden", "true");
-  unlockBodyScroll();
+// Su telefono: torna dalla scheda all'elenco
+document.getElementById("empBackBtn")?.addEventListener("click", () => {
+  empSplitEl?.classList.remove("has-selection");
+});
+
+function markSelectedEmployee() {
+  adminEmployeesChipsEl?.querySelectorAll("[data-open-emp]").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-emp-id") === String(adminEmpSelected?.id || ""));
+  });
 }
 
-// Scroll lock robusto (soprattutto su iPhone/Safari)
+// Scroll lock robusto (soprattutto su iPhone/Safari) - usato dal modale "Nuovo dipendente"
 let _lockedScrollY = 0;
 function lockBodyScroll() {
   if (document.body.classList.contains("modal-open")) return;
@@ -196,94 +196,46 @@ function bindOpenEmployeeButtons(rootEl) {
       const id = btn.getAttribute("data-emp-id");
       const name = btn.getAttribute("data-emp-name") || "Senza nome";
       if (!id) return;
-      openEmployeeModal({ id, full_name: name });
+      openEmployee({ id, full_name: name });
     });
   });
 }
-
-// close modal: backdrop + buttons
-document.querySelectorAll("[data-emp-modal-close]").forEach((el) => {
-  el.addEventListener("click", () => closeEmployeeModal());
-});
 
 // tabs
 document.querySelectorAll("[data-emp-tab]").forEach((btn) => {
   btn.addEventListener("click", () => setEmpTab(btn.getAttribute("data-emp-tab")));
 });
 
-// ESC chiude modale
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && adminEmployeeModalEl?.classList.contains("open")) closeEmployeeModal();
-});
-
 // --- NAV ---
+// Mostra una sezione e carica i suoi dati
+function showView(view) {
+  const v = String(view || "overview");
+  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.view === v));
+  document.querySelectorAll(".view").forEach((el) => el.classList.remove("active"));
+  document.getElementById(`view-${v}`)?.classList.add("active");
+
+  if (v === "overview") loadOverview();
+  if (v === "requests") loadRequests();
+  if (v === "products") loadProducts();
+  if (v === "catalog") loadCatalogAdmin();
+}
+
 document.querySelectorAll(".nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-
     const view = btn.dataset.view;
-    document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
-    document.getElementById(`view-${view}`).classList.add("active");
-
-    updateSidebarForView(view);
-
-    if (view === "hours") loadHours();
-    if (view === "requests") loadRequests();
-    if (view === "products") loadProducts();
-    if (view === "catalog") loadCatalogAdmin();
+    // "Dipendenti" dal menu riparte dall'elenco (su telefono)
+    if (view === "employees") empSplitEl?.classList.remove("has-selection");
+    showView(view);
+    window.scrollTo(0, 0);
   });
 });
 
-function updateSidebarForView(view) {
-  const v = String(view || "");
-  document.body.classList.toggle("products-mode", v === "products");
+document.getElementById("adminHomeLink")?.addEventListener("click", () => showView("overview"));
 
-  const titleEl = document.querySelector(".sidebar .sidebar-title");
-  if (titleEl) titleEl.textContent = (v === "products") ? "Menu" : "Dipendenti";
-}
-
-function goToPickView() {
-  document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
-  document.getElementById("view-pick")?.classList.add("active");
-
-  // stato sidebar: togli active da tutto, lascia solo Prodotti se era attivo? Meglio pulito.
-  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-  updateSidebarForView("pick");
-}
-
-// Pulsanti "Torna indietro" nelle viste principali (Ore/Richieste/Prodotti)
-document.querySelectorAll("[data-admin-back]").forEach((btn) => {
-  btn.addEventListener("click", () => goToPickView());
-});
-
-const adminMonthPicker = document.getElementById("adminMonthPicker");
-const adminMonthTotalEl = document.getElementById("adminMonthTotal");
-const adminTodayTotalEl = document.getElementById("adminTodayTotal");
-const adminHoursExpandAllBtn = document.getElementById("adminHoursExpandAllBtn");
-const adminHoursCollapseAllBtn = document.getElementById("adminHoursCollapseAllBtn");
 const adminReqExpandAllBtn = document.getElementById("adminReqExpandAllBtn");
 const adminReqCollapseAllBtn = document.getElementById("adminReqCollapseAllBtn");
-const adminProdExpandAllBtn = document.getElementById("adminProdExpandAllBtn");
-const adminProdCollapseAllBtn = document.getElementById("adminProdCollapseAllBtn");
 const adminReqExportXlsxBtn = document.getElementById("adminReqExportXlsxBtn");
 const adminProdExportXlsxBtn = document.getElementById("adminProdExportXlsxBtn");
-
-adminHoursExpandAllBtn?.addEventListener("click", () => {
-  document.querySelectorAll('#hoursList details[data-emp-key]').forEach((d) => {
-    d.open = true;
-    const k = d.getAttribute("data-emp-key");
-    if (k) adminOpenEmployeeKeys.add(k);
-  });
-});
-
-adminHoursCollapseAllBtn?.addEventListener("click", () => {
-  document.querySelectorAll('#hoursList details[data-emp-key]').forEach((d) => {
-    d.open = false;
-    const k = d.getAttribute("data-emp-key");
-    if (k) adminOpenEmployeeKeys.delete(k);
-  });
-});
 
 adminReqExpandAllBtn?.addEventListener("click", () => {
   document.querySelectorAll('#requestsList details[data-emp-key]').forEach((d) => {
@@ -300,38 +252,8 @@ adminReqCollapseAllBtn?.addEventListener("click", () => {
   });
 });
 
-adminProdExpandAllBtn?.addEventListener("click", () => {
-  document.querySelectorAll('#productsList details[data-emp-key]').forEach((d) => {
-    d.open = true;
-    const k = d.getAttribute("data-emp-key");
-    if (k) adminOpenProductEmployeeKeys.add(k);
-  });
-});
-adminProdCollapseAllBtn?.addEventListener("click", () => {
-  document.querySelectorAll('#productsList details[data-emp-key]').forEach((d) => {
-    d.open = false;
-    const k = d.getAttribute("data-emp-key");
-    if (k) adminOpenProductEmployeeKeys.delete(k);
-  });
-});
-
-if (adminMonthPicker) adminMonthPicker.value = getCurrentMonthISO();
-adminMonthPicker?.addEventListener("change", () => loadHours());
-
 empHoursMonthEl?.addEventListener("change", () => loadEmpHours());
-openProductsBtn?.addEventListener("click", () => {
-  // Apri la sezione Prodotti della dashboard (fuori dalla scheda dipendente)
-  document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
-  document.getElementById("view-products")?.classList.add("active");
 
-  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-  document.querySelector('.nav-btn[data-view="products"]')?.classList.add("active");
-
-  updateSidebarForView("products");
-  loadProducts();
-});
-
-empReqApplyBtn?.addEventListener("click", () => loadEmpRequests());
 empReqStatusEl?.addEventListener("change", () => loadEmpRequests());
 empReqTypeEl?.addEventListener("change", () => loadEmpRequests());
 empReqMonthEl?.addEventListener("change", () => loadEmpRequests());
@@ -446,12 +368,13 @@ function renderEmployeesChips() {
   }
 
   adminEmployeesChipsEl.innerHTML = filtered.map(p => `
-    <button class="chip" type="button" data-open-emp data-emp-id="${escapeHtml(p.id)}" data-emp-name="${escapeHtml(p.full_name)}">
+    <button class="emp-list-item" type="button" data-open-emp data-emp-id="${escapeHtml(p.id)}" data-emp-name="${escapeHtml(p.full_name)}">
       ${escapeHtml(p.full_name)}
     </button>
   `).join("");
 
   bindOpenEmployeeButtons(adminEmployeesChipsEl);
+  markSelectedEmployee();
 }
 
 let _empSearchTimer = null;
@@ -460,193 +383,139 @@ adminEmployeesSearchEl?.addEventListener("input", () => {
   _empSearchTimer = setTimeout(() => renderEmployeesChips(), 150);
 });
 
-async function loadHours() {
-  const hoursList = document.getElementById("hoursList");
-  if (!hoursList) return;
+// ============================
+// PANORAMICA: numeri del mese + ore per dipendente
+// ============================
+const overviewMonthEl = document.getElementById("overviewMonth");
+if (overviewMonthEl && !overviewMonthEl.value) overviewMonthEl.value = getCurrentMonthISO();
+overviewMonthEl?.addEventListener("change", () => loadOverview());
 
+function monthRange(ym) {
+  const start = `${ym}-01`;
+  const endDate = new Date(ym + "-01T00:00:00");
+  endDate.setMonth(endDate.getMonth() + 1);
+  endDate.setDate(0);
+  const end = `${ym}-${String(endDate.getDate()).padStart(2, "0")}`;
+  return { start, end };
+}
+
+async function loadOverview() {
+  const listEl = document.getElementById("ovEmployeesList");
+  const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = String(val); };
+  const ym = (overviewMonthEl?.value || getCurrentMonthISO()).trim();
+  const { start, end } = monthRange(ym);
+
+  set("ovMonthTotal", "…");
+  set("ovTodayTotal", "…");
+  set("ovPendingRequests", "…");
+  set("ovPendingOrders", "…");
+  if (listEl) listEl.textContent = "Caricamento...";
+
+  // Ore del mese (tutti) + totale per dipendente
   try {
-    hoursList.textContent = "Caricamento...";
-    if (adminMonthTotalEl) adminMonthTotalEl.textContent = "—";
-    if (adminTodayTotalEl) adminTodayTotalEl.textContent = "—";
-
-    const ym = adminMonthPicker?.value || getCurrentMonthISO();
-    const start = `${ym}-01`;
-    const endDate = new Date(ym + "-01T00:00:00");
-    endDate.setMonth(endDate.getMonth() + 1);
-    endDate.setDate(0);
-    const end = `${ym}-${String(endDate.getDate()).padStart(2, "0")}`;
-
     const { data, error } = await supabaseClient
       .from("work_logs")
-      .select(`
-        id,
-        user_id,
-        work_date,
-        start_time,
-        end_time,
-        break_start,
-        break_end,
-        location,
-        activity,
-        created_at,
-        profiles ( id, full_name )
-      `)
+      .select("user_id,work_date,start_time,end_time,break_start,break_end,profiles ( id, full_name )")
       .gte("work_date", start)
-      .lte("work_date", end)
-      .order("work_date", { ascending: false })
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error(error);
-      hoursList.textContent = "Errore caricamento";
-      adminCurrentMonthRows = [];
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      hoursList.textContent = "Nessuna registrazione in questo mese.";
-      adminCurrentMonthRows = [];
-      return;
-    }
-
-    adminCurrentMonthRows = data || [];
+      .lte("work_date", end);
+    if (error) throw error;
 
     const todayISO = getTodayISO();
-
     let monthMin = 0;
     let todayMin = 0;
-
-    const grouped = new Map(); // date -> { totalMin, rows[] }
-    for (const r of data) {
+    const byEmployee = new Map(); // user_id -> { full_name, totalMin, days:Set }
+    for (const r of (data || [])) {
       const nm = netMinutes(r);
       monthMin += nm;
       if (r.work_date === todayISO) todayMin += nm;
-
-      const g = grouped.get(r.work_date) || { totalMin: 0, rows: [] };
+      const g = byEmployee.get(r.user_id) || { full_name: (r.profiles?.full_name || "").trim() || "Senza nome", totalMin: 0, days: new Set() };
       g.totalMin += nm;
-      g.rows.push(r);
-      grouped.set(r.work_date, g);
+      g.days.add(r.work_date);
+      byEmployee.set(r.user_id, g);
     }
+    set("ovMonthTotal", formatHM(monthMin));
+    set("ovTodayTotal", formatHM(todayMin));
 
-    if (adminMonthTotalEl) adminMonthTotalEl.textContent = formatHM(monthMin);
-    if (adminTodayTotalEl) adminTodayTotalEl.textContent = formatHM(todayMin);
-
-  // ============================
-  // Raggruppa per dipendente (tutte le ore insieme)
-  // ============================
-  const byEmployee = new Map(); // user_id -> { userId, full_name, totalMin, rows[] }
-  for (const r of data) {
-    const userId = r.user_id || r.profiles?.id || "unknown";
-    const who = (r.profiles?.full_name || "").trim() || "Senza nome";
-    const nm = netMinutes(r);
-    const g = byEmployee.get(userId) || { userId, full_name: who, totalMin: 0, rows: [] };
-    g.totalMin += nm;
-    g.rows.push(r);
-    byEmployee.set(userId, g);
-  }
-
-  // ordina dipendenti in ordine alfabetico (A->Z)
-  const employees = Array.from(byEmployee.entries()).sort(([, aInfo], [, bInfo]) =>
-    String(aInfo.full_name).localeCompare(String(bInfo.full_name), "it", { sensitivity: "base" })
-  );
-
-  hoursList.innerHTML = employees.map(([userId, info]) => {
-    // righe ordinate per data desc, poi created_at desc (già in query, ma teniamolo esplicito)
-    const rows = (info.rows || []).slice().sort((a, b) => {
-      // ORDINE PER DATA (crescente), poi ora inizio, poi created_at
-      if (a.work_date !== b.work_date) return String(a.work_date).localeCompare(String(b.work_date));
-      const ta = timeToMinutes(a.start_time);
-      const tb = timeToMinutes(b.start_time);
-      if (ta !== tb) return ta - tb;
-      return String(a.created_at || "").localeCompare(String(b.created_at || ""));
-    });
-
-    // Raggruppa per giorno: data unica, ma righe separate (luoghi/registrazioni) sotto
-    const byDay = new Map(); // work_date -> rows[]
-    for (const r of rows) {
-      const dayRows = byDay.get(r.work_date) || [];
-      dayRows.push(r);
-      byDay.set(r.work_date, dayRows);
+    if (listEl) {
+      const employees = Array.from(byEmployee.entries()).sort(([, a], [, b]) =>
+        String(a.full_name).localeCompare(String(b.full_name), "it", { sensitivity: "base" })
+      );
+      listEl.innerHTML = employees.length
+        ? employees.map(([userId, e]) => `
+            <button class="ov-row" type="button" data-open-emp data-emp-id="${escapeHtml(String(userId))}" data-emp-name="${escapeHtml(e.full_name)}">
+              <span class="ov-row-name">${escapeHtml(e.full_name)}</span>
+              <span class="ov-row-days">${e.days.size} giorn${e.days.size === 1 ? "o" : "i"}</span>
+              <span class="ov-row-total">${escapeHtml(formatHM(e.totalMin))}</span>
+            </button>
+          `).join("")
+        : `<div class="empty-state">Nessuna ora registrata in ${escapeHtml(fmtMonthYear(ym))}.</div>`;
+      bindOpenEmployeeButtons(listEl);
     }
-
-    const days = Array.from(byDay.entries()).sort(([a],[b]) => String(a).localeCompare(String(b)));
-
-    const rowsHtml = days.map(([day, dayRows]) => {
-      const dayTotalMin = (dayRows || []).reduce((acc, r) => acc + netMinutes(r), 0);
-      const dayHeader = `
-        <div class="rowItem rowGroup">
-          <div><strong>${escapeHtml(formatDateIT(day))}</strong></div>
-          <div class="muted">${escapeHtml(String(dayRows.length))} registrazione/i</div>
-          <div>${escapeHtml(formatHM(dayTotalMin))}</div>
-        </div>
-      `;
-
-      const dayLines = (dayRows || []).map(r => {
-        const pausa = (r.break_start && r.break_end) ? ` • pausa ${fmtTime(r.break_start)}-${fmtTime(r.break_end)}` : "";
-        const when = `${fmtTime(r.start_time)}-${fmtTime(r.end_time)}${pausa}`;
-        return `
-          <div class="rowItem">
-            <div><strong>${escapeHtml(when)}</strong></div>
-            <div>${escapeHtml(r.location)} • ${escapeHtml(r.activity)}</div>
-            <div>${escapeHtml(formatHM(netMinutes(r)))}</div>
-          </div>
-        `;
-      }).join("");
-
-      return dayHeader + dayLines;
-    }).join("");
-
-    const empKey = encodeURIComponent(String(userId));
-    const openAttr = adminOpenEmployeeKeys.has(empKey) ? "open" : "";
-
-    return `
-      <details class="dayCard empCard acc" data-emp-key="${escapeHtml(empKey)}" ${openAttr}>
-        <summary class="dayHeader acc-head">
-          <div>
-            <strong>${escapeHtml(info.full_name)}</strong>
-            <div class="muted">${rows.length} righe</div>
-          </div>
-          <div style="display:flex; justify-content:flex-end; gap:8px;">
-            <button class="btn small" type="button" data-open-emp data-emp-id="${escapeHtml(String(userId))}" data-emp-name="${escapeHtml(info.full_name)}">Scheda</button>
-          </div>
-          <div class="dayTotal">Totale: ${escapeHtml(formatHM(info.totalMin))}</div>
-        </summary>
-        <div class="rows">${rowsHtml}</div>
-      </details>
-    `;
-  }).join("");
-
-  // Ricorda stato aperto/chiuso (UI)
-  hoursList.querySelectorAll('details[data-emp-key]').forEach((d) => {
-    d.addEventListener("toggle", () => {
-      const k = d.getAttribute("data-emp-key");
-      if (!k) return;
-      if (d.open) adminOpenEmployeeKeys.add(k);
-      else adminOpenEmployeeKeys.delete(k);
-    });
-  });
-
-    bindOpenEmployeeButtons(hoursList);
   } catch (e) {
     console.error(e);
-    hoursList.textContent = "Errore imprevisto (apri la console del browser per i dettagli).";
-    adminCurrentMonthRows = [];
-    if (adminMonthTotalEl) adminMonthTotalEl.textContent = "—";
-    if (adminTodayTotalEl) adminTodayTotalEl.textContent = "—";
+    set("ovMonthTotal", "—");
+    set("ovTodayTotal", "—");
+    if (listEl) listEl.textContent = "Errore caricamento ore.";
+  }
+
+  // Richieste ancora da approvare (tutte, non solo del mese)
+  try {
+    const { count, error } = await supabaseClient
+      .from("requests")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "inviata");
+    if (error) throw error;
+    set("ovPendingRequests", count || 0);
+  } catch (e) {
+    console.error(e);
+    set("ovPendingRequests", "—");
+  }
+
+  // Ordini del mese ancora da consegnare (un ordine = dipendente + giorno + luogo, come in Prodotti)
+  try {
+    const { data, error } = await supabaseClient
+      .from("product_orders")
+      .select("user_id,order_date,place")
+      .is("delivery_date", null)
+      .gte("order_date", start)
+      .lte("order_date", end);
+    if (error) throw error;
+    const keys = new Set((data || []).map(r => `${r.user_id}|${r.order_date}|${r.place || ""}`));
+    set("ovPendingOrders", keys.size);
+  } catch (e) {
+    console.error(e);
+    set("ovPendingOrders", "—");
   }
 }
 
-// ============================
-// EXPORT ORE – TUTTI I DIPENDENTI (da view-pick)
-// ============================
-const exportAllMonthPickerEl = document.getElementById("exportAllMonthPicker");
-if (exportAllMonthPickerEl && !exportAllMonthPickerEl.value) {
-  exportAllMonthPickerEl.value = getCurrentMonthISO();
-}
+// Riquadri cliccabili della Panoramica
+document.querySelectorAll("[data-ov-go]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const go = btn.getAttribute("data-ov-go");
+    const ym = (overviewMonthEl?.value || getCurrentMonthISO()).trim();
+    if (go === "requests") {
+      const st = document.getElementById("reqFilterStatus");
+      if (st) st.value = "inviata";
+    }
+    if (go === "products") {
+      const m = document.getElementById("poFilterMonth");
+      if (m) m.value = ym;
+      adminPoStatusFilter = "pending";
+      document.querySelectorAll("[data-po-status]").forEach((b) => b.classList.toggle("active", b.getAttribute("data-po-status") === "pending"));
+    }
+    if (go === "employees") empSplitEl?.classList.remove("has-selection");
+    showView(go);
+    window.scrollTo(0, 0);
+  });
+});
 
+// ============================
+// EXPORT ORE – TUTTI I DIPENDENTI (dalla Panoramica, mese scelto in alto)
+// ============================
 document.getElementById("exportAllHoursBtn")?.addEventListener("click", async () => {
   const btn = document.getElementById("exportAllHoursBtn");
-  const ym = (exportAllMonthPickerEl?.value || getCurrentMonthISO()).trim();
+  const ym = (overviewMonthEl?.value || getCurrentMonthISO()).trim();
+  const origLabel = btn ? btn.textContent : "";
 
   if (btn) { btn.disabled = true; btn.textContent = "Caricamento..."; }
 
@@ -764,12 +633,9 @@ document.getElementById("exportAllHoursBtn")?.addEventListener("click", async ()
     console.error(err);
     alert("Errore durante l'esportazione. Controlla la console.");
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "Export Excel (tutti)"; }
+    if (btn) { btn.disabled = false; btn.textContent = origLabel; }
   }
 });
-
-// Soluzione B: in Admin si parte scegliendo un dipendente (niente caricamento globale automatico)
-loadEmployees();
 
 // --- Filtri richieste (admin) ---
 (function initRequestFilters() {
@@ -778,9 +644,8 @@ loadEmployees();
   const monthEl = document.getElementById("reqFilterMonth");
   const employeeEl = document.getElementById("reqFilterEmployee");
   const btnReset = document.getElementById("reqFiltersReset");
-  const btnApply = document.getElementById("reqFiltersApply");
 
-  if (!statusEl && !typeEl && !monthEl && !employeeEl && !btnReset && !btnApply) return;
+  if (!statusEl && !typeEl && !monthEl && !employeeEl && !btnReset) return;
 
   function apply() {
     // se la view non è attiva, non serve (evitiamo richieste inutili)
@@ -801,7 +666,6 @@ loadEmployees();
     t = setTimeout(apply, 250);
   });
 
-  btnApply?.addEventListener("click", apply);
   btnReset?.addEventListener("click", () => {
     if (statusEl) statusEl.value = "";
     if (typeEl) typeEl.value = "";
@@ -841,9 +705,8 @@ function labelRequestType(t) {
   const placeEl = document.getElementById("poFilterPlace");
   const productEl = document.getElementById("poFilterProduct");
   const btnReset = document.getElementById("poFiltersReset");
-  const btnApply = document.getElementById("poFiltersApply");
 
-  if (!monthEl && !employeeEl && !placeEl && !productEl && !btnReset && !btnApply) return;
+  if (!monthEl && !employeeEl && !placeEl && !productEl && !btnReset) return;
 
   if (monthEl && !monthEl.value) monthEl.value = getCurrentMonthISO();
 
@@ -864,7 +727,6 @@ function labelRequestType(t) {
   placeEl?.addEventListener("input", debouncedApply);
   productEl?.addEventListener("input", debouncedApply);
 
-  btnApply?.addEventListener("click", apply);
   btnReset?.addEventListener("click", () => {
     if (monthEl) monthEl.value = getCurrentMonthISO();
     if (employeeEl) employeeEl.value = "";
@@ -1458,7 +1320,7 @@ async function loadRequests() {
 }
 
 // ============================
-// SCHEDA DIPENDENTE (modale)
+// SCHEDA DIPENDENTE (sezione Dipendenti)
 // ============================
 async function loadEmpHours() {
   if (!adminEmpSelected?.id || !empHoursListEl) return;
@@ -1525,6 +1387,7 @@ async function loadEmpHours() {
         <div><strong>${escapeHtml(formatDateIT(day))}</strong></div>
         <div class="muted">${escapeHtml(String(sorted.length))} registrazione/i</div>
         <div>${escapeHtml(formatHM(dayTotalMin))}</div>
+        <div></div>
       </div>
     `;
 
@@ -1536,6 +1399,10 @@ async function loadEmpHours() {
           <div><strong>${escapeHtml(when)}</strong></div>
           <div>${escapeHtml(r.location)} • ${escapeHtml(r.activity)}</div>
           <div>${escapeHtml(formatHM(netMinutes(r)))}</div>
+          <div class="row-actions">
+            <button class="btn small danger icon-btn" type="button" data-del-log="${escapeHtml(String(r.id))}"
+              title="Elimina questa registrazione" aria-label="Elimina registrazione ${escapeHtml(when)}">🗑</button>
+          </div>
         </div>
       `;
     }).join("");
@@ -1544,6 +1411,48 @@ async function loadEmpHours() {
   }).join("");
 
   empHoursListEl.innerHTML = `<div class="emp-hours-table"><div class="rows">${allRowsHtml}</div></div>`;
+
+  empHoursListEl.querySelectorAll("[data-del-log]").forEach((btn) => {
+    btn.addEventListener("click", () => deleteWorkLog(btn.getAttribute("data-del-log"), btn));
+  });
+}
+
+// Elimina UNA registrazione ore (una riga), dopo conferma
+async function deleteWorkLog(id, btn) {
+  const r = empHoursRows.find(x => String(x.id) === String(id));
+  if (!r) return;
+
+  const when = `${formatDateIT(r.work_date)}, ${fmtTime(r.start_time)}-${fmtTime(r.end_time)}`;
+  const where = [r.location, r.activity].filter(Boolean).join(" • ");
+  const ok = confirm(
+    `Eliminare questa registrazione di ${adminEmpSelected?.full_name || "questo dipendente"}?\n\n` +
+    `${when}\n${where}\n${formatHM(netMinutes(r))}\n\n` +
+    `L'operazione non si può annullare.`
+  );
+  if (!ok) return;
+
+  if (btn) btn.disabled = true;
+  try {
+    // .select() restituisce le righe cancellate: se è vuoto, Supabase non ha dato il permesso
+    const { data, error } = await supabaseClient
+      .from("work_logs")
+      .delete()
+      .eq("id", id)
+      .select("id");
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      alert("La registrazione non è stata eliminata: il database non ha dato il permesso.");
+      if (btn) btn.disabled = false;
+      return;
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Errore durante l'eliminazione. Riprova.");
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  await loadEmpHours();
 }
 
 empHoursExportXlsxBtn?.addEventListener("click", () => {
@@ -1720,76 +1629,6 @@ async function loadEmpRequests() {
     empRequestsListEl.textContent = "Errore caricamento richieste.";
   }
 }
-
-const adminExportXlsxBtn = document.getElementById("adminExportXlsxBtn");
-
-adminExportXlsxBtn?.addEventListener("click", () => {
-  if (!adminCurrentMonthRows || adminCurrentMonthRows.length === 0) {
-    alert("Nessun dato da esportare per il mese selezionato.");
-    return;
-  }
-
-  const ym = (adminMonthPicker?.value || "mese");
-  const todayISO = getTodayISO();
-  const ymLabel = fmtMonthYear(ym);
-
-  const columns = ["Dipendente", "Data", "Ora inizio", "Ora fine", "Inizio pausa", "Fine pausa", "Luogo", "Attività", "Ore"];
-
-  const sortedForExport = adminCurrentMonthRows.slice().sort((a, b) => {
-    // ORDINE PER DATA (crescente), poi dipendente, poi ora inizio
-    if (a.work_date !== b.work_date) return String(a.work_date).localeCompare(String(b.work_date));
-    const an = String(a.profiles?.full_name || "").toLowerCase();
-    const bn = String(b.profiles?.full_name || "").toLowerCase();
-    if (an !== bn) return an.localeCompare(bn, "it", { sensitivity: "base" });
-    const ta = timeToMinutes(a.start_time);
-    const tb = timeToMinutes(b.start_time);
-    if (ta !== tb) return ta - tb;
-    return String(a.created_at || "").localeCompare(String(b.created_at || ""));
-  });
-
-  const dataRows = sortedForExport.map(r => {
-    const oreMin = netMinutes(r);
-    return {
-      "Dipendente": r.profiles?.full_name || "",
-      "Data": formatDateIT(r.work_date),
-      "Ora inizio": fmtTime(r.start_time),
-      "Ora fine": fmtTime(r.end_time),
-      "Inizio pausa": r.break_start ? fmtTime(r.break_start) : "",
-      "Fine pausa": r.break_end ? fmtTime(r.break_end) : "",
-      "Luogo": r.location,
-      "Attività": r.activity,
-      "Ore": formatHM(oreMin),
-    };
-  });
-
-  // Riepilogo generale
-  let monthMin = 0, todayMin = 0;
-  const byDay = new Map();
-  for (const r of adminCurrentMonthRows) {
-    const m = netMinutes(r);
-    monthMin += m;
-    if (r.work_date === todayISO) todayMin += m;
-    byDay.set(r.work_date, (byDay.get(r.work_date) || 0) + m);
-  }
-
-  const summaryRows = [
-    { Voce: "Totale mese (tutti)", Ore: formatHM(monthMin) },
-    { Voce: "Totale oggi (tutti)", Ore: formatHM(todayMin) },
-    { Voce: "", Ore: "" },
-    ...Array.from(byDay.entries())
-      .sort(([a],[b]) => a.localeCompare(b))
-      .map(([day, min]) => ({ Voce: `Giorno ${formatDateIT(day)}`, Ore: formatHM(min) }))
-  ];
-
-  exportToExcelElegant({
-    filename: `CAME_Admin_Ore_${fmtMonthYearFile(ym)}.xlsx`,
-    sheetName: `Ore ${ymLabel}`,
-    title: `CAME – Ore (Admin) ${ymLabel}`,
-    columns,
-    rows: dataRows,
-    summary: { title: `Riepilogo ${ymLabel}`, rows: summaryRows }
-  });
-});
 
 // ============================
 // EXPORT RICHIESTE (admin)
@@ -2250,20 +2089,16 @@ catalogAddBtn?.addEventListener("click", async () => {
 });
 
 // Router notifiche (admin): al click su una notifica apre la vista giusta.
-// Riusa il click sul pulsante di navigazione (che cambia vista e ricarica i dati).
 window.CameNotifRouter = function (n) {
   const t = n && n.type;
   // ordini (nuovo / annullato) -> Prodotti; richieste (nuova / modificata) -> Richieste
   const view = (t === "order_new" || t === "order_cancelled") ? "products" : "requests";
-  const btn = document.querySelector('.nav-btn[data-view="' + view + '"]');
-  if (btn) { btn.click(); return; }
-  // fallback: attiva la vista direttamente
-  try {
-    document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
-    document.getElementById("view-" + view)?.classList.add("active");
-    if (view === "products" && typeof loadProducts === "function") loadProducts();
-    if (view === "requests" && typeof loadRequests === "function") loadRequests();
-  } catch (_) {}
+  showView(view);
+  window.scrollTo(0, 0);
 };
+
+// Avvio: elenco dipendenti + Panoramica
+loadEmployees();
+showView("overview");
 
 

@@ -79,37 +79,6 @@ h1{margin:0 0 6px;font-size:28px;letter-spacing:.5px;}
 .btn:hover{filter:brightness(1.05);}
 .btn.small{padding:8px 10px;font-size:13px;}
 
-.admin-layout{
-  display:grid;
-  grid-template-columns: 220px 1fr;
-  gap:16px;
-  padding:16px;
-}
-.sidebar{
-  background:rgba(10,18,34,.35);
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:var(--radius);
-  padding:10px;
-}
-.nav-btn{
-  width:100%;
-  text-align:left;
-  padding:10px 12px;
-  border-radius:14px;
-  border:1px solid transparent;
-  background:transparent;
-  color:var(--muted);
-  cursor:pointer;
-}
-.nav-btn:hover{
-  background:rgba(255,255,255,.06);
-  color:var(--text);
-}
-.nav-btn.active{
-  background:rgba(110,168,254,.14);
-  border-color:rgba(110,168,254,.35);
-  color:var(--text);
-}
 
 .content{
   background:rgba(10,18,34,.35);
@@ -121,9 +90,6 @@ h1{margin:0 0 6px;font-size:28px;letter-spacing:.5px;}
 .view{display:none;}
 .view.active{display:block;}
 
-@media (max-width: 860px){
-  .admin-layout{grid-template-columns:1fr;}
-}
 
 body.page-employee {
   background:
@@ -411,26 +377,6 @@ ul {
 }
 .btn.small{padding:8px 12px;border-radius:10px;font-size:13px;}
 
-.admin-layout{
-  display:grid;
-  grid-template-columns:240px 1fr;
-  min-height:calc(100vh - 64px);
-}
-
-.sidebar{
-  border-right:1px solid rgba(255,255,255,.08);
-  padding:14px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.nav-btn{
-  background:none;border:1px solid rgba(255,255,255,.12);
-  color:var(--text);padding:10px 12px;border-radius:12px;
-  cursor:pointer;text-align:left;
-}
-.nav-btn.active{background:rgba(110,168,254,.15);border-color:var(--primary);}
 
 .content{padding:18px;}
 .view{display:none;}
@@ -1636,112 +1582,6 @@ body.page-admin .topbar-actions .btn.small{
 }
 body.page-admin .topbar-actions .btn.small:hover{background: rgba(255,255,255,.06);}
 
-/* layout "finestra" */
-body.page-admin .admin-layout{
-  width: min(1440px, calc(100% - 28px));
-  margin: 14px auto 22px;
-  gap: 14px;
-  padding: 0;
-  grid-template-columns: 260px 1fr;
-  align-items: start;
-}
-
-/* sidebar */
-body.page-admin .sidebar{
-  position: sticky;
-  top: 78px;
-  z-index: 10;
-  border-radius: var(--admin-radius);
-  padding: 12px;
-  border: 1px solid var(--admin-stroke);
-  background: linear-gradient(180deg, var(--admin-panel), var(--admin-panel2));
-  box-shadow: var(--admin-shadow-soft);
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-body.page-admin .sidebar-title{
-  font-size: 12px;
-  font-weight: 900;
-  color: rgba(232,238,252,.75);
-  letter-spacing: .25px;
-  padding: 8px 10px 10px;
-}
-body.page-admin .nav-btn{
-  width: 100%;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.11);
-  background: rgba(255,255,255,.025);
-  color: rgba(232,238,252,.82);
-  padding: 11px 12px;
-  transition: transform .12s ease, background-color .12s ease, border-color .12s ease, filter .12s ease;
-  position: relative;
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-/* iconcina (CSS-only) */
-body.page-admin .nav-btn::after{
-  content:"";
-  width:18px;height:18px;
-  opacity:.92;
-  background: currentColor;
-  -webkit-mask: var(--m) no-repeat center / contain;
-  mask: var(--m) no-repeat center / contain;
-  margin-left:auto;
-}
-body.page-admin .nav-btn[data-view="hours"]{ --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20Zm1 5v5.382l3.447 1.724-.894 1.788L11 13.618V7h2Z'/%3E%3C/svg%3E"); }
-body.page-admin .nav-btn[data-view="requests"]{ --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 2h8l4 4v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V7h3.5L14 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z'/%3E%3C/svg%3E"); }
-body.page-admin .nav-btn[data-view="products"]{ --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 2 3 6.5V17.5L12 22l9-4.5V6.5L12 2Zm0 2.2 6.8 3.4L12 11 5.2 7.6 12 4.2ZM5 9.3l6 3v7.4l-6-3V9.3Zm14 0v7.4l-6 3v-7.4l6-3Z'/%3E%3C/svg%3E"); }
-
-body.page-admin .nav-btn:hover{
-  filter: brightness(1.06);
-  background: rgba(255,255,255,.045);
-}
-body.page-admin .nav-btn:active{transform: scale(.99);}
-body.page-admin .nav-btn.active{
-  background: rgba(110,168,254,.14);
-  border-color: rgba(110,168,254,.40);
-}
-body.page-admin .nav-btn.active::before{
-  content:"";
-  position:absolute;
-  left:10px;
-  top:10px;
-  bottom:10px;
-  width:4px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(110,168,254,.95), rgba(139,198,255,.75));
-}
-body.page-admin .nav-btn.active{
-  padding-left: 22px;
-}
-body.page-admin .nav-btn:focus-visible{
-  outline: none;
-  box-shadow: var(--admin-focus);
-  border-color: rgba(110,168,254,.55);
-}
-
-/* Dipendenti dentro sidebar (più pulito) */
-body.page-admin .sidebar .admin-employees-bar{
-  margin: 10px 0 0;
-  padding: 10px;
-  border-radius: 18px;
-  background: rgba(17, 26, 46, 0.50);
-}
-body.page-admin .sidebar .admin-employees-bar-head{
-  display:grid;
-  grid-template-columns: 1fr;
-  gap:10px;
-  align-items: start;
-}
-body.page-admin .sidebar #adminEmployeesChips{
-  max-height: 34vh;
-  overflow:auto;
-}
-body.page-admin .sidebar #adminEmployeesSearch{
-  font-size: 13px;
-}
 
 /* content: vero "pannello" gestionale */
 body.page-admin .content{
@@ -1758,10 +1598,6 @@ body.page-admin.modal-open{
   overflow: hidden;
 }
 
-/* In Prodotti: non mostrare la lista dipendenti a sinistra */
-body.page-admin.products-mode #adminEmployeesBar{
-  display:none;
-}
 body.page-admin .content > .view{
   padding: 16px;
 }
@@ -1784,69 +1620,6 @@ body.page-admin .view-head h3{
   margin: 0;
 }
 
-/* filtri in alto: più compatti e ordinati */
-body.page-admin .filters.card{
-  border-radius: 18px;
-  background: rgba(17, 26, 46, 0.68);
-  border-color: var(--admin-stroke);
-  box-shadow: 0 16px 55px rgba(0,0,0,.18);
-}
-body.page-admin .filters.card .label{
-  font-size: 12px;
-  margin: 8px 0 4px;
-}
-body.page-admin .filters.card .input{
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-body.page-admin .filters.card .btn.small{
-  border-radius: 12px;
-  min-height: 40px;
-}
-/* su desktop: filtri più “toolbar” */
-@media (min-width: 980px){
-  body.page-admin .filters.card{
-    display: grid;
-    grid-template-columns: 280px 1fr auto;
-    align-items: end;
-    gap: 12px 14px;
-  }
-  body.page-admin #adminExportXlsxBtn{
-    justify-self: end;
-  }
-}
-
-/* Filtri richiudibili (riduce “macchinosità”) */
-body.page-admin .admin-filters-toggle{
-  border:0;
-  padding:0;
-  margin: 0 0 12px;
-}
-body.page-admin .admin-filters-toggle > summary{
-  list-style:none;
-  cursor:pointer;
-  user-select:none;
-  padding: 10px 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(17, 26, 46, 0.40);
-  font-weight: 900;
-  color: rgba(232,238,252,.88);
-}
-body.page-admin .admin-filters-toggle > summary::-webkit-details-marker{display:none;}
-body.page-admin .admin-filters-toggle > summary::after{
-  content:"▾";
-  float:right;
-  opacity:.75;
-}
-body.page-admin .admin-filters-toggle[open] > summary::after{
-  transform: rotate(180deg);
-  display:inline-block;
-}
-body.page-admin .admin-filters-toggle[open] > summary{
-  border-color: rgba(255,255,255,.14);
-  background: rgba(17, 26, 46, 0.50);
-}
 
 /* liste: effetto "tabella moderna" senza cambiare HTML/JS */
 body.page-admin .dayCard{
@@ -1924,10 +1697,6 @@ body.page-admin .admin-hours-tools{
   margin: 10px 0 0;
 }
 
-/* In Prodotti non usiamo più "card per dipendente", quindi apri/chiudi tutti non serve */
-body.page-admin #view-products .admin-hours-tools{
-  display:none;
-}
 
 /* ===================================================== */
 /* ADMIN - TABELLE (DESKTOP) */
@@ -1962,143 +1731,6 @@ body.page-admin #view-products .admin-hours-tools{
     grid-template-columns: 1.25fr 1.25fr 220px;
   }
 
-  body.page-admin #view-hours #hoursList,
-  body.page-admin #view-requests #requestsList,
-  body.page-admin #view-products #productsList{
-    display: grid;
-    gap: 12px;
-  }
-
-  /* Nella scheda dipendente (soluzione B) la tabella deve essere "perfetta" e leggibile */
-  body.page-admin #empHoursList{ display:block; }
-
-  /* Sticky header dentro la scheda (scroll interno): top=0 */
-  body.page-admin .modal.as-page .admin-table-head{
-    top: 0;
-    z-index: 6;
-    margin: 0 0 12px;
-  }
-
-  /* Giorno come “gruppo” con righe tabellari */
-  body.page-admin #view-hours .dayCard{
-    padding: 0;
-    overflow: hidden;
-    border-radius: 18px;
-  }
-  body.page-admin #view-hours .dayHeader{
-    padding: 10px 12px 8px;
-    background: rgba(255,255,255,.02);
-  }
-
-  /* “fisarmonica” per dipendente (Ore) */
-  body.page-admin #view-hours details.empCard{
-    border-radius: 18px;
-  }
-  body.page-admin #view-hours details.empCard > summary.dayHeader{
-    cursor: pointer;
-    list-style: none;
-    display: grid;
-    grid-template-columns: 1.35fr 1.2fr 120px;
-    gap: 12px;
-    align-items: center;
-    user-select: none;
-    position: relative;
-    padding-right: 42px; /* spazio per chevron */
-  }
-  body.page-admin #view-hours details.empCard > summary.dayHeader::-webkit-details-marker{display:none;}
-  body.page-admin #view-hours details.empCard > summary.dayHeader::after{
-    content:"▾";
-    position:absolute;
-    right: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: .78;
-    font-weight: 900;
-  }
-  body.page-admin #view-hours details.empCard[open] > summary.dayHeader::after{
-    transform: translateY(-50%) rotate(180deg);
-  }
-  body.page-admin #view-hours details.empCard > summary.dayHeader:focus-visible{
-    outline: none;
-    box-shadow: var(--admin-focus);
-  }
-  body.page-admin #view-hours details.empCard > summary.dayHeader .muted{
-    margin-top: 4px;
-    font-size: 12px;
-    color: rgba(232,238,252,.68);
-  }
-  body.page-admin #view-hours .rows{
-    margin-top: 0;
-    display: grid;
-    gap: 0;
-  }
-
-  /* Riga tabella */
-  body.page-admin #view-hours .rowItem{
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-    border-top: 1px solid rgba(255,255,255,.08);
-    background: rgba(17, 26, 46, 0.42);
-    display: grid;
-    grid-template-columns: 1.35fr 1.2fr 120px;
-    gap: 10px;
-    align-items: center;
-    padding: 9px 12px;
-    font-size: 13px;
-    line-height: 1.25;
-  }
-  body.page-admin #view-hours .rowItem:nth-child(2n){
-    background: rgba(17, 26, 46, 0.34);
-  }
-  body.page-admin #view-hours .rowItem:hover{
-    background: rgba(255,255,255,.035);
-  }
-
-  /* colonne: (1) dipendente+orari, (2) luogo+attività, (3) netto */
-  body.page-admin #view-hours .rowItem > div:nth-child(1){
-    font-weight: 700;
-  }
-  body.page-admin #view-hours .rowItem > div:nth-child(2){
-    color: rgba(232,238,252,.78);
-  }
-  body.page-admin #view-hours .rowItem > div:nth-child(3){
-    text-align: right;
-    font-weight: 900;
-    color: rgba(139,198,255,.92);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  /* rendi “muted” più leggibile in tabella */
-  body.page-admin #view-hours .rowItem .muted{
-    margin: 0;
-    font-size: 12px;
-    color: rgba(232,238,252,.68);
-  }
-
-  /* Riga "gruppo data" dentro ogni dipendente (data unica) */
-  body.page-admin #view-hours .rowItem.rowGroup{
-    background: rgba(255,255,255,.03);
-    border-top-color: rgba(255,255,255,.12);
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-  /* Totale giorno: evidenzia le "Ore" in modo diverso dalle righe sotto */
-  body.page-admin #view-hours .rowItem.rowGroup > div:nth-child(3){
-    justify-self: end;
-    width: fit-content;
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 5px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 176, 32, 0.35);
-    background: rgba(255, 176, 32, 0.12);
-    color: rgba(255, 176, 32, 0.95);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
 
   /* --- Stesse regole tabellari anche per Ore nella scheda dipendente --- */
   /* Tabella unica: un solo wrapper con righe attaccate */
@@ -2323,40 +1955,6 @@ body.page-admin #view-products .admin-hours-tools{
   }
 }
 
-/* responsive */
-@media (max-width: 980px){
-  body.page-admin .admin-table-head{display:none;}
-  body.page-admin .admin-layout{
-    grid-template-columns: 1fr;
-  }
-  body.page-admin .sidebar{
-    position: static;
-    top: auto;
-  }
-}
-
-/* ===================================================== */
-/* ADMIN - DIPENDENTI + MODALE "SCHEDA DIPENDENTE" */
-/* ===================================================== */
-body.page-admin .admin-employees-bar{
-  margin: 16px 16px 0;
-}
-body.page-admin .content > .admin-employees-bar{
-  margin: 16px;
-}
-body.page-admin .admin-employees-bar-head{
-  display:flex;
-  gap:14px;
-  align-items:end;
-  justify-content:space-between;
-  flex-wrap:wrap;
-}
-body.page-admin #adminEmployeesChips{
-  margin-top: 10px;
-  max-height: 140px;
-  overflow: auto;
-  padding-right: 4px;
-}
 
 /* Modale */
 .modal{
@@ -2393,45 +1991,6 @@ body.page-admin #adminEmployeesChips{
 .emp-tab{ display:none; }
 .emp-tab.active{ display:block; }
 
-/* Modale usata come "pagina" (soluzione B): niente overlay, pannello grande */
-.modal.as-page{
-  inset: 78px 14px 14px 14px; /* sotto la topbar */
-}
-.modal.as-page .modal-backdrop{
-  display:none;
-}
-.modal.as-page .modal-card{
-  width: 100%;
-  max-height: 100%;
-  margin: 0;
-  border-radius: 22px;
-  background: rgba(10,18,34,.92);
-}
-
-/* Blocca lo scroll quando un modale è aperto */
-body.modal-open{
-  overflow: hidden;
-}
-
-@media (max-width: 980px){
-  /* Su smartphone/tablet: la scheda dipendente diventa un vero full-screen overlay,
-     così non si intravede la pagina sotto. */
-  .modal.as-page{
-    inset: 0;
-  }
-  .modal.as-page .modal-backdrop{
-    display:block;
-    background: rgba(0,0,0,.55);
-    backdrop-filter: blur(8px);
-  }
-  .modal.as-page .modal-card{
-    width: 100%;
-    max-height: 100vh;
-    margin: 0;
-    border-radius: 0;
-    background: rgba(10,18,34,.98);
-  }
-}
 
 /* =====================================================================
    RESTYLE "AURORA GLASS" - blocco 1: Login + Home + Ore (dipendente)
@@ -2809,35 +2368,6 @@ body.page-admin .topbar-actions .btn.small{
 }
 body.page-admin .topbar-actions .btn.small:hover{ border-color: var(--primary); }
 
-/* sidebar (vetro) */
-body.page-admin .sidebar{
-  background: var(--glass);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid var(--gb);
-  box-shadow: var(--admin-shadow-soft);
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
-  body.page-admin .sidebar{ background: rgba(30,20,60,.55); }
-}
-body.page-admin .sidebar-title{ color: var(--muted); }
-body.page-admin .nav-btn{
-  background: var(--glass-2);
-  border: 1px solid var(--gb);
-  color: var(--text);
-}
-body.page-admin .nav-btn:hover{ background: rgba(255,255,255,.12); }
-body.page-admin .nav-btn.active{
-  background: rgba(163,116,240,.16);
-  border-color: rgba(163,116,240,.4);
-}
-body.page-admin .nav-btn.active::before{
-  background: linear-gradient(180deg, #9a5cf0, #52c2e0);
-}
-body.page-admin .sidebar .admin-employees-bar{
-  background: var(--glass-2);
-  border: 1px solid var(--gb);
-}
 
 /* contenuto (grande pannello vetro) */
 body.page-admin .content{
@@ -2888,16 +2418,6 @@ body.page-admin .input:focus{
 body.page-admin label,
 body.page-admin .label{ color: var(--muted); }
 
-/* filtri richiudibili */
-body.page-admin .admin-filters-toggle > summary{
-  background: var(--glass-2);
-  border: 1px solid var(--gb);
-  color: var(--text);
-}
-body.page-admin .admin-filters-toggle[open] > summary{
-  background: rgba(255,255,255,.12);
-  border-color: var(--gb);
-}
 
 /* statistiche */
 body.page-admin .stat{
@@ -2986,9 +2506,6 @@ body.page-admin .inline-editor{
   background: var(--glass-2);
   border: 1px solid var(--gb);
 }
-@media (max-width: 980px){
-  .modal.as-page .modal-card{ background: rgba(16,11,26,.98); }
-}
 
 /* tabelle desktop */
 @media (min-width: 980px){
@@ -3000,9 +2517,7 @@ body.page-admin .inline-editor{
     -webkit-backdrop-filter: blur(10px);
     box-shadow: none;
   }
-  body.page-admin #view-hours .dayHeader{ background: rgba(255,255,255,.04); }
 
-  body.page-admin #view-hours .rowItem,
   body.page-admin #empHoursList .rowItem,
   body.page-admin #empRequestsList .rowItem,
   body.page-admin #view-requests .rowItem,
@@ -3010,31 +2525,24 @@ body.page-admin .inline-editor{
     border-top: 1px solid var(--gb);
     background: rgba(255,255,255,.03);
   }
-  body.page-admin #view-hours .rowItem:nth-child(2n),
   body.page-admin #empHoursList .rowItem:nth-child(2n),
   body.page-admin #empRequestsList .rowItem:nth-child(2n){
     background: rgba(255,255,255,.055);
   }
-  body.page-admin #view-hours .rowItem:hover,
   body.page-admin #empHoursList .rowItem:hover,
   body.page-admin #empRequestsList .rowItem:hover{
     background: rgba(255,255,255,.09);
   }
-  body.page-admin #view-hours .rowItem > div:nth-child(2),
   body.page-admin #empHoursList .rowItem > div:nth-child(2){
     color: var(--muted);
   }
-  body.page-admin #view-hours .rowItem > div:nth-child(3),
   body.page-admin #empHoursList .rowItem > div:nth-child(3){
     color: var(--accent2);
   }
-  body.page-admin #view-hours .rowItem .muted,
-  body.page-admin #empHoursList .rowItem .muted,
-  body.page-admin #view-hours details.empCard > summary.dayHeader .muted{
+  body.page-admin #empHoursList .rowItem .muted{
     color: var(--muted);
   }
 
-  body.page-admin #view-hours .rowItem.rowGroup,
   body.page-admin #empHoursList .rowItem.rowGroup,
   body.page-admin #empRequestsList .rowItem.rowGroup,
   body.page-admin #view-requests .rowItem.rowGroup,
@@ -3042,7 +2550,6 @@ body.page-admin .inline-editor{
     background: rgba(255,255,255,.075);
     border-top-color: var(--gb);
   }
-  body.page-admin #view-hours .rowItem.rowGroup > div:nth-child(3),
   body.page-admin #empHoursList .rowItem.rowGroup > div:nth-child(3){
     border: 1px solid rgba(230,184,77,.4);
     background: rgba(230,184,77,.14);
@@ -3073,8 +2580,6 @@ body.page-admin .inline-editor{
 .catalog-item-main .catalog-name{ min-width: 160px; }
 .catalog-item-actions{ display: flex; gap: 6px; flex-wrap: wrap; }
 
-/* icona del pulsante "Cataloghi" nella sidebar admin */
-body.page-admin .nav-btn[data-view="catalog"]{ --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M4 5h16v2H4V5Zm0 6h16v2H4v-2Zm0 6h16v2H4v-2Z'/%3E%3C/svg%3E"); }
 
 /* =====================================================================
    Prodotti (admin) - pannello di controllo: barra periodo, KPI, filtri.
@@ -3432,3 +2937,297 @@ body.page-admin .po-deliver-input{ max-width:170px; }
 .newemp-creds strong{ font-family: ui-monospace, Consolas, monospace; font-size:16px; word-break:break-all; user-select:all; }
 .newemp-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .newemp-actions .btn{ flex:1; min-width:140px; }
+
+
+/* =====================================================================
+   ADMIN - struttura a sezioni (2026-11)
+   Menu unico (in alto su computer, in fondo su telefono), Panoramica,
+   Dipendenti con elenco + scheda affiancati, filtri su una riga.
+   ===================================================================== */
+body.page-admin{ --admin-top: 56px; }
+
+body.page-admin .topbar{
+  min-height: var(--admin-top);
+  padding: 8px 18px;
+}
+body.page-admin .topbar h2{ cursor: pointer; }
+
+/* menu sezioni */
+body.page-admin .admin-nav{
+  position: sticky;
+  top: var(--admin-top);
+  z-index: 25;
+  display: flex;
+  gap: 6px;
+  padding: 8px max(14px, calc((100% - 1440px) / 2));
+  background: rgba(14,11,26,.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--gb);
+  overflow-x: auto;
+}
+body.page-admin .nav-btn{
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+body.page-admin .nav-btn:hover{ color: var(--text); background: var(--glass); }
+body.page-admin .nav-btn.active{
+  color: var(--text);
+  background: rgba(163,116,240,.18);
+  border-color: rgba(163,116,240,.45);
+}
+body.page-admin .nav-btn:focus-visible{ outline: none; box-shadow: var(--admin-focus); }
+
+body.page-admin .admin-main{
+  width: min(1440px, calc(100% - 28px));
+  margin: 14px auto 22px;
+}
+
+/* intestazione di sezione */
+body.page-admin .view-head{ margin-bottom: 14px; align-items: flex-end; }
+body.page-admin .month-field .label{ margin: 0 0 4px; }
+body.page-admin .month-field .input{ min-width: 180px; }
+body.page-admin .section-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 20px 0 10px;
+}
+body.page-admin .section-head h4{ margin: 0; font-size: 14px; font-weight: 800; }
+
+/* Panoramica: riquadri */
+body.page-admin .ov-kpis{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+body.page-admin .kpi-link{
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  transition: border-color .12s ease, background-color .12s ease;
+}
+body.page-admin .kpi-link::after{
+  content: "→";
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  color: var(--muted);
+  font-weight: 800;
+}
+body.page-admin .kpi-link:hover{ border-color: rgba(163,116,240,.5); background: var(--glass-2); }
+body.page-admin .kpi-link:focus-visible{ outline: none; box-shadow: var(--admin-focus); }
+
+/* Panoramica: ore per dipendente */
+body.page-admin .ov-list{
+  border: 1px solid var(--gb);
+  border-radius: 16px;
+  overflow: hidden;
+}
+body.page-admin .ov-row{
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 110px;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 14px;
+  border: 0;
+  border-top: 1px solid var(--gb);
+  background: rgba(255,255,255,.03);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+body.page-admin .ov-row:first-child{ border-top: 0; }
+body.page-admin .ov-row:hover{ background: rgba(255,255,255,.08); }
+body.page-admin .ov-row-name{ font-weight: 700; }
+body.page-admin .ov-row-days{ color: var(--muted); font-size: 13px; }
+body.page-admin .ov-row-total{
+  text-align: right;
+  font-weight: 800;
+  color: var(--accent2);
+  font-variant-numeric: tabular-nums;
+}
+
+body.page-admin .empty-state{
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Dipendenti: elenco + scheda */
+body.page-admin .emp-split{
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+body.page-admin .emp-list-panel{
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--gb);
+  border-radius: 16px;
+  background: var(--glass);
+}
+body.page-admin .emp-list-head{ display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+body.page-admin .emp-list-head h3{ margin: 0; }
+body.page-admin .emp-list-head .muted{ margin: 0; font-size: 12px; }
+body.page-admin .emp-list{
+  display: grid;
+  gap: 2px;
+  max-height: 60vh;
+  overflow: auto;
+}
+body.page-admin .emp-list-item{
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+body.page-admin .emp-list-item:hover{ background: var(--glass-2); }
+body.page-admin .emp-list-item.active{
+  background: rgba(163,116,240,.18);
+  border-color: rgba(163,116,240,.45);
+  font-weight: 700;
+}
+body.page-admin .emp-detail{ min-width: 0; }
+body.page-admin .emp-detail > .empty-state{
+  border: 1px dashed var(--gb);
+  border-radius: 16px;
+}
+body.page-admin .emp-detail-head{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+body.page-admin .emp-detail-head h3{ margin: 0; flex: 1 1 auto; font-size: 18px; }
+body.page-admin .emp-back{ display: none; }
+body.page-admin .seg{ display: flex; gap: 6px; }
+body.page-admin .seg .tab{ flex: 0 0 auto; min-width: 0; min-height: 38px; padding: 8px 16px; }
+
+/* barra filtri su una riga */
+body.page-admin .toolbar{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  padding: 12px;
+  border: 1px solid var(--gb);
+  border-radius: 16px;
+  background: var(--glass-2);
+  margin-bottom: 8px;
+}
+body.page-admin .toolbar > div{ flex: 1 1 150px; min-width: 0; }
+body.page-admin .toolbar .label{ margin: 0 0 4px; font-size: 12px; }
+body.page-admin .toolbar .input{ width: 100%; min-height: 40px; }
+body.page-admin .toolbar > .toolbar-actions{ flex: 0 0 auto; display: flex; gap: 8px; }
+body.page-admin .toolbar > .toolbar-grow{ flex: 1 1 260px; }
+body.page-admin .toolbar > .month-field{ flex: 0 1 220px; }
+body.page-admin .toolbar > .toolbar-total{
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+body.page-admin .toolbar-total .muted{ margin: 0; font-size: 12px; }
+body.page-admin .toolbar-total strong{
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 20px;
+  color: var(--accent2);
+}
+body.page-admin .toolbar-info{ margin: 0 0 10px; font-size: 12.5px; min-height: 1em; }
+body.page-admin .po-toolbar{ margin-bottom: 12px; }
+body.page-admin .po-kpis{ margin-bottom: 12px; }
+
+/* bottoni */
+body.page-admin .btn.danger{
+  border-color: rgba(240,119,111,.4);
+  background: rgba(240,119,111,.10);
+  color: var(--danger);
+}
+body.page-admin .btn.danger:hover{ background: rgba(240,119,111,.2); border-color: var(--danger); }
+body.page-admin .icon-btn{ min-width: 40px; min-height: 36px; padding: 6px 8px; line-height: 1; }
+body.page-admin .row-actions{ display: flex; justify-content: flex-end; }
+
+/* intestazione tabelle: non più "appiccicata" sotto la barra */
+body.page-admin .admin-table-head{ position: static; margin: 8px 0; }
+
+/* Ore nella scheda: 4 colonne (orari, luogo, ore, elimina) */
+@media (min-width: 980px){
+  body.page-admin .admin-table-head.hours,
+  body.page-admin #empHoursList .rowItem{
+    grid-template-columns: 1.35fr 1.2fr 110px 52px;
+  }
+}
+@media (max-width: 979px){
+  body.page-admin .admin-table-head{ display: none; }
+  /* riga ore su telefono: testo a sinistra, cestino a destra */
+  body.page-admin #empHoursList .rowItem{
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+  body.page-admin #empHoursList .rowItem > div:nth-child(-n+3){ grid-column: 1; }
+  body.page-admin #empHoursList .rowItem > .row-actions{ grid-column: 2; grid-row: 1 / span 3; }
+  body.page-admin #empHoursList .rowItem.rowGroup > div:nth-child(4){ display: none; }
+  body.page-admin #empHoursList .rowItem > div:nth-child(3){ font-weight: 800; color: var(--accent2); }
+}
+
+@media (max-width: 900px){
+  body.page-admin .ov-kpis{ grid-template-columns: 1fr 1fr; }
+  body.page-admin .emp-split{ grid-template-columns: 1fr; }
+  body.page-admin .emp-list{ max-height: none; }
+  /* telefono: o l'elenco o la scheda, mai tutti e due */
+  body.page-admin .emp-split .emp-detail{ display: none; }
+  body.page-admin .emp-split.has-selection .emp-detail{ display: block; }
+  body.page-admin .emp-split.has-selection .emp-list-panel{ display: none; }
+  body.page-admin .emp-back{ display: inline-flex; }
+}
+
+/* telefono: menu sezioni come barra in fondo */
+@media (max-width: 760px){
+  body.page-admin{ padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  body.page-admin .admin-nav{
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    gap: 4px;
+    border-bottom: 0;
+    border-top: 1px solid var(--gb);
+    background: rgba(14,11,26,.94);
+  }
+  body.page-admin .nav-btn{ flex: 1 1 0; min-width: 0; padding: 8px 2px; font-size: 12px; }
+  body.page-admin .admin-main{ width: calc(100% - 20px); margin-top: 10px; }
+  body.page-admin .content > .view{ padding: 12px; }
+  body.page-admin .month-field .input{ min-width: 0; }
+  body.page-admin .toolbar > .toolbar-actions{ flex: 1 1 100%; }
+  body.page-admin .toolbar > .toolbar-actions .btn{ flex: 1 1 0; }
+  body.page-admin .ov-row{ grid-template-columns: 1fr auto; }
+  body.page-admin .ov-row-days{ display: none; }
+}
