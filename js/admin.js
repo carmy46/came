@@ -2228,12 +2228,19 @@ document.getElementById("adminProdConsumptionBtn")?.addEventListener("click", as
 // Tabella catalog_items. Solo l'admin può modificare (regole RLS).
 // ============================
 const catalogListEl = document.getElementById("catalogList");
+const catalogAddFormEl = document.getElementById("catalogAddForm");
 const catalogNewNameEl = document.getElementById("catalogNewName");
-const catalogAddBtn = document.getElementById("catalogAddBtn");
+const catalogNewCategoryEl = document.getElementById("catalogNewCategory");
+const catalogCategoryListEl = document.getElementById("catalogCategoryList");
+const catalogSearchEl = document.getElementById("catalogSearch");
+const catalogCountEl = document.getElementById("catalogCount");
 const catalogMsgEl = document.getElementById("catalogMsg");
 
 let catalogCurrentType = "product"; // product | place | activity
+let catalogItems = [];
+let catalogEditingId = null; // voce aperta in modifica (una alla volta)
 const CATALOG_LABEL = { product: "prodotto", place: "luogo", activity: "attività" };
+const CATALOG_NO_CATEGORY = "Senza categoria";
 
 function setCatalogMsg(text, type = "info") {
   if (!catalogMsgEl) return;
@@ -2258,141 +2265,216 @@ async function loadCatalogAdmin() {
       catalogListEl.textContent = "Errore nel caricamento del catalogo.";
       return;
     }
-    renderCatalogList(data || []);
+    catalogItems = data || [];
+    renderCatalogList();
   } catch (e) {
     console.error(e);
     catalogListEl.textContent = "Errore imprevisto.";
   }
 }
 
-function renderCatalogList(items) {
+// Gruppi da mostrare: prodotti divisi per categoria ("Senza categoria" in fondo), il resto in un unico gruppo
+function catalogGroups(items) {
+  if (catalogCurrentType !== "product") return [{ title: "", items }];
+  const map = new Map();
+  for (const it of items) {
+    const c = (it.category || "").trim() || CATALOG_NO_CATEGORY;
+    if (!map.has(c)) map.set(c, []);
+    map.get(c).push(it);
+  }
+  return Array.from(map.entries())
+    .sort(([a], [b]) => (a === CATALOG_NO_CATEGORY) - (b === CATALOG_NO_CATEGORY) || a.localeCompare(b, "it", { sensitivity: "base" }))
+    .map(([title, list]) => ({ title, items: list }));
+}
+
+function catalogRowHtml(it, idx, count, canMove) {
+  const isProduct = catalogCurrentType === "product";
+  const name = escapeHtml(it.name);
+
+  if (String(it.id) === String(catalogEditingId)) {
+    return `
+      <div class="cat-row editing" data-id="${escapeHtml(String(it.id))}">
+        <div class="cat-edit-fields">
+          <input class="input" data-edit-name value="${name}" aria-label="Nome" />
+          ${isProduct ? `<input class="input" data-edit-category list="catalogCategoryList" placeholder="Categoria" aria-label="Categoria" value="${escapeHtml(it.category || "")}" />` : ""}
+        </div>
+        <div class="cat-edit-actions">
+          <button class="btn small" type="button" data-cat-save>Salva</button>
+          <button class="btn small ghost" type="button" data-cat-cancel>Annulla</button>
+          <span class="cat-edit-spacer"></span>
+          <button class="btn small ghost" type="button" data-cat-toggle>${it.active ? "Nascondi ai dipendenti" : "Mostra ai dipendenti"}</button>
+          <button class="btn small danger" type="button" data-cat-delete>Elimina</button>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="cat-row${it.active ? "" : " is-hidden"}" data-id="${escapeHtml(String(it.id))}">
+      <span class="cat-row-name">${name}${it.active ? "" : ` <span class="pill">nascosto</span>`}</span>
+      <div class="cat-row-actions">
+        ${canMove ? `
+          <button class="btn small icon-btn" type="button" data-cat-move="up" ${idx === 0 ? "disabled" : ""} title="Sposta su" aria-label="Sposta su ${name}">↑</button>
+          <button class="btn small icon-btn" type="button" data-cat-move="down" ${idx === count - 1 ? "disabled" : ""} title="Sposta giù" aria-label="Sposta giù ${name}">↓</button>` : ""}
+        <button class="btn small icon-btn" type="button" data-cat-edit title="Modifica" aria-label="Modifica ${name}">✏️</button>
+      </div>
+    </div>`;
+}
+
+function renderCatalogList() {
+  const isProduct = catalogCurrentType === "product";
+  const q = (catalogSearchEl?.value || "").trim().toLowerCase();
+  const items = !q
+    ? catalogItems
+    : catalogItems.filter(it => `${it.name} ${it.category || ""}`.toLowerCase().includes(q));
+
+  if (catalogCountEl) {
+    catalogCountEl.textContent = q
+      ? `${items.length} di ${catalogItems.length}`
+      : `${catalogItems.length} vo${catalogItems.length === 1 ? "ce" : "ci"}`;
+  }
+
+  // Categorie già usate, suggerite mentre si scrive (si può comunque scriverne una nuova)
+  if (catalogCategoryListEl) {
+    catalogCategoryListEl.innerHTML = !isProduct ? "" :
+      Array.from(new Set(catalogItems.map(it => (it.category || "").trim()).filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" }))
+        .map(c => `<option value="${escapeHtml(c)}"></option>`)
+        .join("");
+  }
+
+  if (!catalogItems.length) {
+    catalogListEl.innerHTML = `<div class="empty-state">Nessuna voce. Aggiungine una qui sopra.</div>`;
+    return;
+  }
   if (!items.length) {
-    catalogListEl.innerHTML = `<p class="muted">Nessuna voce. Aggiungine una qui sopra.</p>`;
+    catalogListEl.innerHTML = `<div class="empty-state">Nessuna voce trovata.</div>`;
     return;
   }
 
-  const isProduct = catalogCurrentType === "product";
-
-  // Datalist con le categorie già usate, per suggerirle mentre si scrive
-  // (restano comunque testo libero: si può scrivere una categoria nuova).
-  const categoryOptionsHtml = isProduct
-    ? Array.from(new Set(items.map(it => (it.category || "").trim()).filter(Boolean)))
-        .sort((a, b) => a.localeCompare(b, "it", { sensitivity: "base" }))
-        .map(c => `<option value="${escapeHtml(c)}"></option>`)
-        .join("")
-    : "";
-
-  const listHtml = items.map((it, idx) => `
-    <div class="catalog-item">
-      <div class="catalog-item-main">
-        <input class="input catalog-name" data-id="${it.id}" value="${escapeHtml(it.name)}" />
-        ${isProduct ? `<input class="input" list="catalogCategoryList" data-cat-category="${it.id}" style="max-width:170px; margin-left:8px;" placeholder="Categoria..." value="${escapeHtml(it.category || "")}" />` : ""}
-        ${it.active ? "" : `<span class="pill" style="margin-left:8px;">nascosto</span>`}
-      </div>
-      <div class="catalog-item-actions">
-        <button class="btn small" data-cat-move="up" data-id="${it.id}" ${idx === 0 ? "disabled" : ""} title="Sposta su">↑</button>
-        <button class="btn small" data-cat-move="down" data-id="${it.id}" ${idx === items.length - 1 ? "disabled" : ""} title="Sposta giù">↓</button>
-        <button class="btn small" data-cat-rename="${it.id}">Salva nome</button>
-        <button class="btn small" data-cat-toggle="${it.id}" data-active="${it.active}">${it.active ? "Nascondi" : "Mostra"}</button>
-        <button class="btn small danger" data-cat-delete="${it.id}">Elimina</button>
-      </div>
-    </div>
+  // Durante la ricerca niente frecce: l'ordine si cambia sull'elenco completo
+  const canMove = !q;
+  catalogListEl.innerHTML = catalogGroups(items).map(g => `
+    <section class="cat-group">
+      ${g.title ? `<div class="cat-group-head"><span>${escapeHtml(g.title)}</span><span class="muted">${g.items.length}</span></div>` : ""}
+      ${g.items.map((it, idx) => catalogRowHtml(it, idx, g.items.length, canMove)).join("")}
+    </section>
   `).join("");
 
-  catalogListEl.innerHTML = (isProduct ? `<datalist id="catalogCategoryList">${categoryOptionsHtml}</datalist>` : "") + listHtml;
-  bindCatalogActions(items);
+  catalogListEl.querySelector(".cat-row.editing [data-edit-name]")?.focus();
 }
 
-function bindCatalogActions(items) {
-  // Salva nome (rinomina)
-  catalogListEl.querySelectorAll("[data-cat-rename]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-cat-rename");
-      const input = catalogListEl.querySelector(`.catalog-name[data-id="${id}"]`);
-      const name = (input?.value || "").trim();
-      if (!name) { setCatalogMsg("Il nome non può essere vuoto.", "error"); return; }
-      const { error } = await supabaseClient.from("catalog_items").update({ name }).eq("id", id);
-      if (error) {
-        if (error.code === "23505") setCatalogMsg("Esiste già una voce con questo nome.", "error");
-        else { console.error(error); setCatalogMsg("Errore nel salvataggio.", "error"); }
-        return;
-      }
-      setCatalogMsg("Nome salvato ✅", "ok");
-      await loadCatalogAdmin();
-    });
-  });
+async function saveCatalogEdit(row, it) {
+  const name = (row.querySelector("[data-edit-name]")?.value || "").trim();
+  if (!name) { setCatalogMsg("Il nome non può essere vuoto.", "error"); return; }
+  const patch = { name };
+  const catEl = row.querySelector("[data-edit-category]");
+  if (catEl) patch.category = (catEl.value || "").trim() || null;
 
-  // Categoria (solo prodotti): autosalvataggio al cambio, come la data di consegna in Prodotti
-  catalogListEl.querySelectorAll("[data-cat-category]").forEach((input) => {
-    input.addEventListener("change", async () => {
-      const id = input.getAttribute("data-cat-category");
-      const category = (input.value || "").trim() || null;
-      const { error } = await supabaseClient.from("catalog_items").update({ category }).eq("id", id);
-      if (error) {
-        console.error(error);
-        setCatalogMsg("Errore nel salvataggio della categoria.", "error");
-        return;
-      }
-      setCatalogMsg("Categoria salvata ✅", "ok");
-    });
-  });
-
-  // Mostra / Nascondi
-  catalogListEl.querySelectorAll("[data-cat-toggle]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-cat-toggle");
-      const active = btn.getAttribute("data-active") === "true";
-      const { error } = await supabaseClient.from("catalog_items").update({ active: !active }).eq("id", id);
-      if (error) { console.error(error); setCatalogMsg("Errore.", "error"); return; }
-      await loadCatalogAdmin();
-    });
-  });
-
-  // Elimina
-  catalogListEl.querySelectorAll("[data-cat-delete]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-cat-delete");
-      if (!confirm("Eliminare questa voce dal catalogo?\nGli ordini e le ore già registrati NON vengono toccati.")) return;
-      const { error } = await supabaseClient.from("catalog_items").delete().eq("id", id);
-      if (error) { console.error(error); setCatalogMsg("Errore nell'eliminazione.", "error"); return; }
-      setCatalogMsg("Voce eliminata ✅", "ok");
-      await loadCatalogAdmin();
-    });
-  });
-
-  // Sposta su / giù (scambia l'ordine con la voce vicina)
-  catalogListEl.querySelectorAll("[data-cat-move]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-id");
-      const dir = btn.getAttribute("data-cat-move");
-      const idx = items.findIndex((x) => String(x.id) === String(id));
-      if (idx < 0) return;
-      const swapIdx = dir === "up" ? idx - 1 : idx + 1;
-      if (swapIdx < 0 || swapIdx >= items.length) return;
-
-      const a = items[idx];
-      const b = items[swapIdx];
-      const { error: e1 } = await supabaseClient.from("catalog_items").update({ sort_order: b.sort_order }).eq("id", a.id);
-      const { error: e2 } = await supabaseClient.from("catalog_items").update({ sort_order: a.sort_order }).eq("id", b.id);
-      if (e1 || e2) { console.error(e1 || e2); setCatalogMsg("Errore nel riordino.", "error"); return; }
-      await loadCatalogAdmin();
-    });
-  });
+  const { error } = await supabaseClient.from("catalog_items").update(patch).eq("id", it.id);
+  if (error) {
+    if (error.code === "23505") setCatalogMsg("Esiste già una voce con questo nome.", "error");
+    else { console.error(error); setCatalogMsg("Errore nel salvataggio.", "error"); }
+    return;
+  }
+  catalogEditingId = null;
+  setCatalogMsg("Salvato ✅", "ok");
+  await loadCatalogAdmin();
 }
+
+// Tutti i tasti dell'elenco (un solo ascoltatore, l'elenco viene ridisegnato spesso)
+catalogListEl?.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button");
+  const row = btn?.closest(".cat-row");
+  if (!btn || !row || btn.disabled) return;
+  const it = catalogItems.find(x => String(x.id) === row.getAttribute("data-id"));
+  if (!it) return;
+
+  if (btn.hasAttribute("data-cat-edit")) {
+    catalogEditingId = it.id;
+    setCatalogMsg("");
+    renderCatalogList();
+    return;
+  }
+  if (btn.hasAttribute("data-cat-cancel")) {
+    catalogEditingId = null;
+    renderCatalogList();
+    return;
+  }
+  if (btn.hasAttribute("data-cat-save")) {
+    btn.disabled = true;
+    await saveCatalogEdit(row, it);
+    btn.disabled = false;
+    return;
+  }
+  if (btn.hasAttribute("data-cat-toggle")) {
+    const { error } = await supabaseClient.from("catalog_items").update({ active: !it.active }).eq("id", it.id);
+    if (error) { console.error(error); setCatalogMsg("Errore.", "error"); return; }
+    catalogEditingId = null;
+    setCatalogMsg(it.active ? "Nascosto ai dipendenti ✅" : "Di nuovo visibile ai dipendenti ✅", "ok");
+    await loadCatalogAdmin();
+    return;
+  }
+  if (btn.hasAttribute("data-cat-delete")) {
+    if (!confirm(`Eliminare "${it.name}" dal catalogo?\nGli ordini e le ore già registrati NON vengono toccati.`)) return;
+    const { error } = await supabaseClient.from("catalog_items").delete().eq("id", it.id);
+    if (error) { console.error(error); setCatalogMsg("Errore nell'eliminazione.", "error"); return; }
+    catalogEditingId = null;
+    setCatalogMsg("Voce eliminata ✅", "ok");
+    await loadCatalogAdmin();
+    return;
+  }
+  if (btn.hasAttribute("data-cat-move")) {
+    // scambia l'ordine con la voce vicina dello stesso gruppo
+    const group = catalogGroups(catalogItems).find(g => g.items.includes(it));
+    const idx = group ? group.items.indexOf(it) : -1;
+    const other = group?.items[btn.getAttribute("data-cat-move") === "up" ? idx - 1 : idx + 1];
+    if (!other) return;
+    const { error: e1 } = await supabaseClient.from("catalog_items").update({ sort_order: other.sort_order }).eq("id", it.id);
+    const { error: e2 } = await supabaseClient.from("catalog_items").update({ sort_order: it.sort_order }).eq("id", other.id);
+    if (e1 || e2) { console.error(e1 || e2); setCatalogMsg("Errore nel riordino.", "error"); return; }
+    await loadCatalogAdmin();
+  }
+});
+
+// In modifica: Invio salva, Esc annulla
+catalogListEl?.addEventListener("keydown", (e) => {
+  const row = e.target.closest(".cat-row.editing");
+  if (!row) return;
+  if (e.key === "Enter") { e.preventDefault(); row.querySelector("[data-cat-save]")?.click(); }
+  if (e.key === "Escape") { e.preventDefault(); row.querySelector("[data-cat-cancel]")?.click(); }
+});
+
+let _catalogSearchTimer = null;
+catalogSearchEl?.addEventListener("input", () => {
+  clearTimeout(_catalogSearchTimer);
+  _catalogSearchTimer = setTimeout(() => renderCatalogList(), 150);
+});
 
 // Cambia scheda (Prodotti / Luoghi / Attività)
 document.querySelectorAll("[data-catalog-tab]").forEach((btn) => {
   btn.addEventListener("click", () => {
     catalogCurrentType = btn.getAttribute("data-catalog-tab") || "product";
     document.querySelectorAll("[data-catalog-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+    catalogEditingId = null;
+    if (catalogSearchEl) catalogSearchEl.value = "";
     setCatalogMsg("");
+    updateCatalogAddForm();
     loadCatalogAdmin();
   });
 });
 
+// Modulo "Aggiungi": la categoria serve solo per i prodotti
+function updateCatalogAddForm() {
+  if (catalogNewCategoryEl) catalogNewCategoryEl.hidden = catalogCurrentType !== "product";
+  if (catalogNewNameEl) catalogNewNameEl.placeholder = `Nome del nuovo ${CATALOG_LABEL[catalogCurrentType]}`;
+}
+updateCatalogAddForm();
+
 // Aggiungi nuova voce
-catalogAddBtn?.addEventListener("click", async () => {
+catalogAddFormEl?.addEventListener("submit", async (e) => {
+  e.preventDefault();
   const name = (catalogNewNameEl?.value || "").trim();
+  const category = catalogCurrentType === "product" ? ((catalogNewCategoryEl?.value || "").trim() || null) : null;
   if (!name) { setCatalogMsg(`Scrivi il nome del ${CATALOG_LABEL[catalogCurrentType]}.`, "error"); return; }
   try {
     // metti la nuova voce in fondo: sort_order = (massimo attuale) + 10
@@ -2407,7 +2489,7 @@ catalogAddBtn?.addEventListener("click", async () => {
 
     const { error } = await supabaseClient
       .from("catalog_items")
-      .insert({ type: catalogCurrentType, name, sort_order: nextOrder });
+      .insert({ type: catalogCurrentType, name, sort_order: nextOrder, ...(category ? { category } : {}) });
 
     if (error) {
       if (error.code === "23505") setCatalogMsg("Esiste già una voce con questo nome.", "error");
@@ -2415,7 +2497,7 @@ catalogAddBtn?.addEventListener("click", async () => {
       return;
     }
     if (catalogNewNameEl) catalogNewNameEl.value = "";
-    setCatalogMsg("Voce aggiunta ✅", "ok");
+    setCatalogMsg(`Aggiunto "${name}"${category ? ` in ${category}` : ""} ✅`, "ok");
     await loadCatalogAdmin();
   } catch (e) {
     console.error(e);

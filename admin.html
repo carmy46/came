@@ -315,9 +315,8 @@
         </div>
 
         <p class="muted" style="margin:0 0 12px;">
-          Aggiungi, rinomina, riordina o nascondi le voci che i dipendenti vedono
-          nei menu. Le modifiche valgono subito, senza bisogno di pubblicare.
-          Gli ordini e le ore già registrati non vengono toccati.
+          Le voci che i dipendenti vedono nei menu. Le modifiche valgono subito;
+          ordini e ore già registrati non vengono toccati.
         </p>
 
         <div class="chips catalog-tabs">
@@ -326,18 +325,23 @@
           <button class="chip" type="button" data-catalog-tab="activity">Attività</button>
         </div>
 
-        <div class="toolbar" style="margin-top:12px;">
-          <div class="toolbar-grow">
-            <label class="label" for="catalogNewName">Aggiungi una voce</label>
-            <input id="catalogNewName" class="input" type="text" placeholder="Es. nuovo prodotto..." />
+        <form id="catalogAddForm" class="cat-add card" autocomplete="off">
+          <div class="cat-add-title">Aggiungi una voce</div>
+          <div class="cat-add-fields">
+            <input id="catalogNewName" class="input" type="text" placeholder="Nome" aria-label="Nome" />
+            <input id="catalogNewCategory" class="input" type="text" list="catalogCategoryList" placeholder="Categoria" aria-label="Categoria" />
+            <button id="catalogAddBtn" class="btn small" type="submit">+ Aggiungi</button>
           </div>
-          <div class="toolbar-actions">
-            <button id="catalogAddBtn" class="btn small" type="button">+ Aggiungi</button>
-          </div>
-        </div>
+        </form>
+        <datalist id="catalogCategoryList"></datalist>
         <p id="catalogMsg" class="msg"></p>
 
-        <div id="catalogList" style="margin-top:12px;">Caricamento...</div>
+        <div class="cat-list-head">
+          <input id="catalogSearch" class="input" type="search" placeholder="Cerca..." aria-label="Cerca nel catalogo" />
+          <span id="catalogCount" class="muted"></span>
+        </div>
+
+        <div id="catalogList">Caricamento...</div>
       </div>
     </section>
   </main>

@@ -2567,18 +2567,60 @@ body.page-admin .inline-editor{
    Gestione cataloghi (admin) - layout righe
    ===================================================================== */
 .catalog-tabs{ margin-top: 4px; }
-.catalog-item{
+
+/* aggiungi voce */
+.cat-add{ margin-top: 12px; padding: 12px 14px; }
+.cat-add-title{ font-weight: 800; font-size: 14px; margin-bottom: 8px; }
+.cat-add-fields{ display: flex; gap: 8px; flex-wrap: wrap; }
+.cat-add-fields .input{ flex: 2 1 200px; min-width: 0; }
+.cat-add-fields #catalogNewCategory{ flex: 1 1 150px; }
+.cat-add-fields .input[hidden]{ display: none; }
+
+/* ricerca + conteggio */
+.cat-list-head{ display: flex; align-items: center; gap: 12px; margin: 4px 0 12px; }
+.cat-list-head .input{ flex: 1 1 auto; max-width: 320px; min-width: 0; }
+.cat-list-head .muted,
+.cat-group-head .muted{ margin: 0; white-space: nowrap; }
+#catalogMsg:empty{ display: none; }
+
+/* gruppi (categorie) e righe */
+.cat-group{
+  border: 1px solid var(--gb, var(--border));
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.cat-group-head{
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 14px;
+  background: rgba(255,255,255,.06);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+.cat-row{
+  display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 8px 10px 8px 14px;
+  border-top: 1px solid var(--gb, var(--border));
+  background: rgba(255,255,255,.03);
 }
-.catalog-item:last-child{ border-bottom: none; }
-.catalog-item-main{ flex: 1 1 220px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.catalog-item-main .catalog-name{ min-width: 160px; }
-.catalog-item-actions{ display: flex; gap: 6px; flex-wrap: wrap; }
+.cat-group > .cat-row:first-child{ border-top: 0; }
+.cat-row-name{ flex: 1 1 auto; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.cat-row.is-hidden .cat-row-name{ color: var(--muted); }
+.cat-row-actions{ display: flex; gap: 6px; flex: 0 0 auto; }
+
+/* riga aperta in modifica */
+.cat-row.editing{ flex-direction: column; align-items: stretch; background: rgba(255,255,255,.08); padding: 12px 14px; }
+.cat-edit-fields{ display: flex; gap: 8px; flex-wrap: wrap; }
+.cat-edit-fields .input{ flex: 2 1 200px; min-width: 0; }
+.cat-edit-fields [data-edit-category]{ flex: 1 1 150px; }
+.cat-edit-actions{ display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.cat-edit-spacer{ flex: 1 1 auto; }
 
 
 /* =====================================================================
