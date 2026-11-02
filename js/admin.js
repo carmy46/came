@@ -636,7 +636,7 @@ async function loadOverview() {
   }
 }
 
-// Panoramica: chi non ha ancora inserito le ore (lun–ven fino a ieri) + promemoria WhatsApp
+// Panoramica: ultime ore inserite da ogni dipendente attivo; chi è indietro (lun–ven fino a ieri) in cima con promemoria WhatsApp
 const APP_URL = "https://came-eta.vercel.app";
 
 function whatsappReminderLink(phone, fullName) {
@@ -674,28 +674,22 @@ async function loadMissingHours(ym, monthLogs) {
       logsByUser.get(r.user_id).add(r.work_date);
     }
 
-    let checked = false;
+    // Tutti i dipendenti attivi: "behind" = almeno un giorno lun–ven senza ore nel mese scelto
     const rows = [];
     for (const p of (profiles || [])) {
       if (!p?.id || String(p.role || "").toLowerCase() === "admin" || p.active === false) continue;
       const rg = window.missingHours.range(ym, p.created_at);
-      if (!rg) continue;
-      checked = true;
-      const days = window.missingHours.missingWeekdays({
+      const days = rg ? window.missingHours.missingWeekdays({
         from: rg.from,
         to: rg.to,
         loggedDates: logsByUser.get(p.id),
         requests: (reqs || []).filter(r => r.user_id === p.id && (r.end_date || r.start_date) >= start),
-      });
-      if (days.length) rows.push({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", phone: p.phone });
+      }) : [];
+      rows.push({ id: p.id, full_name: (p.full_name || "").trim() || "Senza nome", phone: p.phone, behind: days.length > 0 });
     }
 
-    if (!checked) {
-      el.innerHTML = `<div class="empty-state">Niente da controllare per ${escapeHtml(fmtMonthYear(ym))}.</div>`;
-      return;
-    }
     if (!rows.length) {
-      el.innerHTML = `<div class="empty-state">Tutti in regola ✅</div>`;
+      el.innerHTML = `<div class="empty-state">Nessun dipendente attivo.</div>`;
       return;
     }
 
@@ -711,9 +705,12 @@ async function loadMissingHours(ym, monthLogs) {
       r.lastDate = last?.[0]?.work_date || "";
     }));
 
-    // Prima chi è più indietro (o non ha mai inserito ore)
-    rows.sort((a, b) => a.lastDate.localeCompare(b.lastDate) || a.full_name.localeCompare(b.full_name, "it", { sensitivity: "base" }));
-    if (infoEl) infoEl.textContent = `${rows.length} dipendent${rows.length === 1 ? "e" : "i"}`;
+    // Prima chi è indietro (dal più indietro), poi chi è in regola
+    rows.sort((a, b) => (b.behind - a.behind) || a.lastDate.localeCompare(b.lastDate) || a.full_name.localeCompare(b.full_name, "it", { sensitivity: "base" }));
+    const behindCount = rows.filter(r => r.behind).length;
+    if (infoEl) infoEl.textContent = behindCount
+      ? `${behindCount} da sollecitare su ${rows.length}`
+      : `Tutti in regola ✅`;
 
     const thisYear = new Date().getFullYear();
     const fmtLast = (iso) => {
@@ -724,12 +721,14 @@ async function loadMissingHours(ym, monthLogs) {
     };
 
     el.innerHTML = rows.map(r => {
-      const link = whatsappReminderLink(r.phone, r.full_name);
-      const action = link
-        ? `<a class="btn small wa-btn" href="${escapeHtml(link)}" target="_blank" rel="noopener">WhatsApp</a>`
-        : `<button class="btn small ghost" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">Aggiungi numero</button>`;
+      const link = r.behind ? whatsappReminderLink(r.phone, r.full_name) : "";
+      const action = !r.behind
+        ? `<span class="ov-ok">✅ In regola</span>`
+        : link
+          ? `<a class="btn small wa-btn" href="${escapeHtml(link)}" target="_blank" rel="noopener">WhatsApp</a>`
+          : `<button class="btn small ghost" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">Aggiungi numero</button>`;
       return `
-        <div class="ov-row ov-miss-row">
+        <div class="ov-row ov-miss-row${r.behind ? " is-behind" : ""}">
           <button class="ov-miss-name" type="button" data-open-emp data-emp-id="${escapeHtml(r.id)}" data-emp-name="${escapeHtml(r.full_name)}">${escapeHtml(r.full_name)}</button>
           <span class="ov-row-days">${r.lastDate ? `Ultime ore: ${escapeHtml(fmtLast(r.lastDate))}` : "Nessuna ora inserita"}</span>
           ${action}
