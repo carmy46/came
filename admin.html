@@ -184,53 +184,31 @@
       <div id="view-requests" class="view">
         <div class="view-head">
           <h3>Richieste</h3>
+          <button id="adminReqExportXlsxBtn" class="btn small" type="button">Export Excel</button>
         </div>
 
-        <div class="toolbar">
-          <div>
-            <label class="label" for="reqFilterStatus">Stato</label>
-            <select id="reqFilterStatus" class="input">
-              <option value="">Tutti</option>
-              <option value="inviata">Inviata</option>
-              <option value="approvata">Approvata</option>
-              <option value="rifiutata">Rifiutata</option>
-            </select>
-          </div>
-          <div>
-            <label class="label" for="reqFilterType">Tipo</label>
-            <select id="reqFilterType" class="input">
-              <option value="">Tutti</option>
+        <!-- Stato: la coda "Da approvare" è quella che si apre di default -->
+        <div class="chips req-status-chips">
+          <button class="chip active" type="button" data-req-status="inviata">Da approvare</button>
+          <button class="chip" type="button" data-req-status="approvata">Approvate</button>
+          <button class="chip" type="button" data-req-status="rifiutata">Rifiutate</button>
+          <button class="chip" type="button" data-req-status="">Tutte</button>
+        </div>
+
+        <div class="filter-row">
+          <input id="reqFilterEmployee" class="input" type="search" placeholder="Cerca dipendente" aria-label="Cerca dipendente" />
+          <select id="reqFilterType" class="input" aria-label="Tipo">
+              <option value="">Tutti i tipi</option>
               <option value="ferie">Ferie</option>
               <option value="permesso_giornaliero">Permesso giornaliero</option>
               <option value="uscita_anticipata">Uscita anticipata</option>
+              <option value="entrata_anticipata">Entrata anticipata</option>
               <option value="entrata_posticipata">Entrata posticipata</option>
             </select>
-          </div>
-          <div>
-            <label class="label" for="reqFilterMonth">Mese</label>
-            <input id="reqFilterMonth" class="input" type="month" />
-          </div>
-          <div>
-            <label class="label" for="reqFilterEmployee">Dipendente</label>
-            <input id="reqFilterEmployee" class="input" type="search" placeholder="Es. Mario" />
-          </div>
-          <div class="toolbar-actions">
-            <button id="reqFiltersReset" class="btn small ghost" type="button">Reset</button>
-            <button id="adminReqExportXlsxBtn" class="btn small" type="button">Export Excel</button>
-          </div>
-        </div>
-        <p class="muted toolbar-info" id="reqFiltersInfo"></p>
-
-        <div class="admin-hours-tools">
-          <button id="adminReqExpandAllBtn" class="btn small ghost" type="button">Apri tutti</button>
-          <button id="adminReqCollapseAllBtn" class="btn small ghost" type="button">Chiudi tutti</button>
+          <input id="reqFilterMonth" class="input" type="month" aria-label="Mese" title="Mese (vuoto = tutti)" />
+          <button id="reqFiltersReset" class="btn small ghost" type="button" hidden>Azzera filtri</button>
         </div>
 
-        <div class="table-head admin-table-head requests" aria-hidden="true">
-          <div>Dipendente / Tipo</div>
-          <div>Quando / Nota</div>
-          <div style="text-align:right;">Stato / Azioni</div>
-        </div>
         <div id="requestsList">Caricamento...</div>
       </div>
 
@@ -278,31 +256,14 @@
           </div>
         </div>
 
-        <!-- Filtri di ricerca (restringono solo l'elenco qui sotto) -->
-        <div class="toolbar">
-          <div>
-            <label class="label" for="poFilterEmployee">Dipendente</label>
-            <input id="poFilterEmployee" class="input" type="search" placeholder="Es. Mario" />
+        <!-- Ricerca unica + coda di lavoro per stato consegna (restringono solo l'elenco) -->
+        <div class="filter-row">
+          <input id="poSearch" class="input" type="search" placeholder="Cerca dipendente, luogo o prodotto" aria-label="Cerca negli ordini" />
+          <div class="chips po-status-chips">
+            <button class="chip active" type="button" data-po-status="all">Tutti</button>
+            <button class="chip" type="button" data-po-status="pending">Da consegnare</button>
+            <button class="chip" type="button" data-po-status="delivered">Consegnati</button>
           </div>
-          <div>
-            <label class="label" for="poFilterPlace">Luogo</label>
-            <input id="poFilterPlace" class="input" type="search" placeholder="Es. B&B..." />
-          </div>
-          <div>
-            <label class="label" for="poFilterProduct">Prodotto</label>
-            <input id="poFilterProduct" class="input" type="search" placeholder="Es. Carta..." />
-          </div>
-          <div class="toolbar-actions">
-            <button id="poFiltersReset" class="btn small ghost" type="button">Reset</button>
-          </div>
-        </div>
-        <p class="muted toolbar-info" id="poFiltersInfo"></p>
-
-        <!-- Coda di lavoro: filtra l'elenco per stato consegna (non tocca KPI/export) -->
-        <div class="chips po-status-chips">
-          <button class="chip active" type="button" data-po-status="all">Tutti</button>
-          <button class="chip" type="button" data-po-status="pending">Da consegnare</button>
-          <button class="chip" type="button" data-po-status="delivered">Consegnati</button>
         </div>
 
         <div id="productsList">Caricamento...</div>

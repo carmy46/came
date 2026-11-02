@@ -2766,52 +2766,22 @@ body.page-admin .po-day-pz{
   border-radius:999px;
 }
 
-/* riga dipendente (compatta, si apre sui luoghi) */
-body.page-admin .po-emp{ border-top:1px solid rgba(255,255,255,.06); }
-body.page-admin .po-emp-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:12px 16px;
-  cursor:pointer;
-  user-select:none;
-  list-style:none;
-  transition:background-color .12s ease;
-}
-body.page-admin .po-emp-head::-webkit-details-marker{ display:none; }
-body.page-admin .po-emp-head:hover{ background:rgba(255,255,255,.03); }
-body.page-admin .po-emp-name{ font-weight:800; }
-body.page-admin .po-emp-meta{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-  font-size:12.5px;
-  color:var(--muted);
-}
-body.page-admin .po-chev{
-  opacity:.75;
-  font-weight:900;
-  transition:transform .12s ease;
-}
-body.page-admin .po-emp[open] .po-chev{ transform:rotate(180deg); }
-body.page-admin .po-emp[open] > .po-emp-head{ background:rgba(255,255,255,.035); }
-body.page-admin .po-emp-body{
-  background:rgba(0,0,0,.14);
-  border-top:1px solid rgba(255,255,255,.05);
-}
-
-/* ordine per luogo (riga dentro il dipendente) */
+/* ordine (dipendente + luogo) direttamente sotto il giorno */
 body.page-admin .po-order{
-  padding:12px 16px 12px 26px;
+  padding:12px 16px;
   display:grid;
   gap:10px;
+  border-top:1px solid rgba(255,255,255,.06);
 }
-body.page-admin .po-order + .po-order{ border-top:1px solid rgba(255,255,255,.05); }
-body.page-admin .po-order-placename{ font-weight:700; }
+body.page-admin .po-order.is-done{ opacity:.7; }
+body.page-admin .po-order.is-pending{ box-shadow: inset 3px 0 0 var(--amber); }
+body.page-admin .po-order-placename{ font-weight:800; }
 body.page-admin .po-order-place{ color:var(--muted); font-size:12.5px; margin-top:2px; }
+body.page-admin .po-order-emp{
+  padding:0; border:0; background:none; font:inherit; color:var(--text); cursor:pointer;
+}
+body.page-admin .po-order-emp:hover{ text-decoration:underline; }
+body.page-admin .po-deliver-today{ white-space:nowrap; }
 
 /* chips prodotti */
 body.page-admin .po-order-items{ display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; }
@@ -2843,11 +2813,90 @@ body.page-admin .po-deliver-input{ max-width:170px; }
 /* desktop: righe luogo a colonne allineate */
 @media (min-width: 860px){
   body.page-admin .po-order{
-    grid-template-columns: minmax(160px,1.1fr) minmax(220px,2fr) 220px;
+    grid-template-columns: minmax(170px,1.1fr) minmax(220px,2fr) auto;
     align-items:center;
   }
   body.page-admin .po-order:hover{ background:rgba(255,255,255,.02); }
-  body.page-admin .po-order-deliver{ justify-content:flex-end; }
+  body.page-admin .po-order-deliver{ justify-content:flex-end; flex-wrap:nowrap; }
+}
+body.page-admin .po-day-date{ text-transform:none; }
+body.page-admin .po-day-date::first-letter{ text-transform:uppercase; }
+body.page-admin .po-deliver-input{ width:160px; }
+@media (max-width: 859px){
+  body.page-admin .po-order-deliver{ flex-wrap:nowrap; }
+  body.page-admin .po-order-deliver > *{ flex:1 1 0; min-width:0; }
+  body.page-admin .po-deliver-input{ width:auto; max-width:none; }
+  body.page-admin .po-order-deliver > .po-status{ white-space:normal; text-align:center; }
+}
+body.page-admin #view-requests .view-head{ align-items:center; }
+
+/* riga filtri compatta (Richieste, Prodotti): campi senza etichetta, vanno a capo su telefono */
+body.page-admin .filter-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin:0 0 14px;
+}
+body.page-admin .filter-row > .input{ flex:1 1 170px; min-width:0; width:auto; }
+body.page-admin .filter-row > input[type="search"]{ flex:2 1 220px; }
+body.page-admin .filter-row .po-status-chips{ margin:0; }
+body.page-admin .filter-row .btn[hidden]{ display:none; }
+body.page-admin .req-status-chips{ margin:0 0 12px; }
+
+/* =====================================================================
+   Richieste (admin) - una scheda per richiesta
+   ===================================================================== */
+body.page-admin .req-list{ display:grid; gap:10px; }
+body.page-admin .req-card{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:12px 16px;
+  border:1px solid var(--admin-stroke);
+  border-radius:14px;
+  background:var(--admin-panel2);
+}
+body.page-admin .req-card.is-pending{ border-left:3px solid var(--amber); }
+body.page-admin .req-main{ flex:1 1 auto; min-width:0; display:grid; gap:3px; }
+body.page-admin .req-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+body.page-admin .req-who{
+  padding:0; border:0; background:none; font:inherit; font-weight:800; font-size:15px;
+  color:var(--text); cursor:pointer; text-align:left;
+}
+body.page-admin .req-who:hover{ text-decoration:underline; }
+body.page-admin .req-type{
+  font-size:11.5px;
+  font-weight:800;
+  letter-spacing:.3px;
+  text-transform:uppercase;
+  color:var(--accent2);
+  background:rgba(95,201,232,.12);
+  padding:2px 9px;
+  border-radius:999px;
+}
+body.page-admin .req-when{ font-weight:600; }
+body.page-admin .req-note{ color:var(--muted); font-style:italic; overflow-wrap:anywhere; }
+body.page-admin .req-sent{ font-size:12px; margin:0; }
+body.page-admin .req-side{ flex:0 0 auto; }
+body.page-admin .req-approve{ background:var(--accent2); border-color:var(--accent2); color:#08211d; font-weight:800; }
+body.page-admin .req-status{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.3px;
+  text-transform:uppercase;
+  padding:4px 10px;
+  border-radius:999px;
+  white-space:nowrap;
+}
+body.page-admin .req-status--approvata{ color:#08211d; background:var(--accent2); }
+body.page-admin .req-status--rifiutata{ color:#fff; background:rgba(240,119,111,.75); }
+
+@media (max-width: 640px){
+  body.page-admin .req-card{ flex-direction:column; align-items:stretch; }
+  body.page-admin .req-actions{ display:flex; justify-content:stretch; }
+  body.page-admin .req-actions .btn{ flex:1 1 0; }
+  body.page-admin .req-side > .req-status{ align-self:flex-start; }
 }
 
 /* ============================================================= */

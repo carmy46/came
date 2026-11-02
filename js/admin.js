@@ -71,8 +71,6 @@ function getCurrentMonthISO() {
   return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}`;
 }
 
-let adminOpenRequestEmployeeKeys = new Set(); // per ricordare quali dipendenti sono aperti (UI)
-let adminOpenProductEmployeeKeys = new Set();
 let adminCurrentRequestRows = [];
 let adminCurrentProductGroups = [];
 
@@ -279,25 +277,8 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
 
 document.getElementById("adminHomeLink")?.addEventListener("click", () => showView("overview"));
 
-const adminReqExpandAllBtn = document.getElementById("adminReqExpandAllBtn");
-const adminReqCollapseAllBtn = document.getElementById("adminReqCollapseAllBtn");
 const adminReqExportXlsxBtn = document.getElementById("adminReqExportXlsxBtn");
 const adminProdExportXlsxBtn = document.getElementById("adminProdExportXlsxBtn");
-
-adminReqExpandAllBtn?.addEventListener("click", () => {
-  document.querySelectorAll('#requestsList details[data-emp-key]').forEach((d) => {
-    d.open = true;
-    const k = d.getAttribute("data-emp-key");
-    if (k) adminOpenRequestEmployeeKeys.add(k);
-  });
-});
-adminReqCollapseAllBtn?.addEventListener("click", () => {
-  document.querySelectorAll('#requestsList details[data-emp-key]').forEach((d) => {
-    d.open = false;
-    const k = d.getAttribute("data-emp-key");
-    if (k) adminOpenRequestEmployeeKeys.delete(k);
-  });
-});
 
 empHoursMonthEl?.addEventListener("change", () => loadEmpHours());
 
@@ -650,10 +631,7 @@ document.querySelectorAll("[data-ov-go]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const go = btn.getAttribute("data-ov-go");
     const ym = (overviewMonthEl?.value || getCurrentMonthISO()).trim();
-    if (go === "requests") {
-      const st = document.getElementById("reqFilterStatus");
-      if (st) st.value = "inviata";
-    }
+    if (go === "requests") setReqStatusFilter("inviata");
     if (go === "products") {
       const m = document.getElementById("poFilterMonth");
       if (m) m.value = ym;
@@ -795,14 +773,30 @@ document.getElementById("exportAllHoursBtn")?.addEventListener("click", async ()
 });
 
 // --- Filtri richieste (admin) ---
+// Stato scelto con i bottoni sopra l'elenco: "inviata" (da approvare) | "approvata" | "rifiutata" | "" (tutte)
+let adminReqStatusFilter = "inviata";
+
+function setReqStatusFilter(status) {
+  adminReqStatusFilter = status || "";
+  document.querySelectorAll("[data-req-status]").forEach((b) =>
+    b.classList.toggle("active", b.getAttribute("data-req-status") === adminReqStatusFilter)
+  );
+}
+
+document.querySelectorAll("[data-req-status]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    setReqStatusFilter(btn.getAttribute("data-req-status"));
+    loadRequests();
+  });
+});
+
 (function initRequestFilters() {
-  const statusEl = document.getElementById("reqFilterStatus");
   const typeEl = document.getElementById("reqFilterType");
   const monthEl = document.getElementById("reqFilterMonth");
   const employeeEl = document.getElementById("reqFilterEmployee");
   const btnReset = document.getElementById("reqFiltersReset");
 
-  if (!statusEl && !typeEl && !monthEl && !employeeEl && !btnReset) return;
+  if (!typeEl && !monthEl && !employeeEl && !btnReset) return;
 
   function apply() {
     // se la view non è attiva, non serve (evitiamo richieste inutili)
@@ -812,7 +806,6 @@ document.getElementById("exportAllHoursBtn")?.addEventListener("click", async ()
   }
 
   // Applica quando cambia un filtro “semplice”
-  statusEl?.addEventListener("change", apply);
   typeEl?.addEventListener("change", apply);
   monthEl?.addEventListener("change", apply);
 
@@ -824,7 +817,6 @@ document.getElementById("exportAllHoursBtn")?.addEventListener("click", async ()
   });
 
   btnReset?.addEventListener("click", () => {
-    if (statusEl) statusEl.value = "";
     if (typeEl) typeEl.value = "";
     if (monthEl) monthEl.value = "";
     if (employeeEl) employeeEl.value = "";
@@ -847,6 +839,7 @@ function labelRequestType(t) {
     case "ferie": return "Ferie";
     case "permesso_giornaliero": return "Permesso giornaliero";
     case "uscita_anticipata": return "Permesso uscita anticipata";
+    case "entrata_anticipata": return "Permesso entrata anticipata";
     case "entrata_posticipata": return "Permesso entrata posticipata";
     default: return t || "—";
   }
@@ -858,12 +851,7 @@ function labelRequestType(t) {
 
 (function initProductFilters() {
   const monthEl = document.getElementById("poFilterMonth");
-  const employeeEl = document.getElementById("poFilterEmployee");
-  const placeEl = document.getElementById("poFilterPlace");
-  const productEl = document.getElementById("poFilterProduct");
-  const btnReset = document.getElementById("poFiltersReset");
-
-  if (!monthEl && !employeeEl && !placeEl && !productEl && !btnReset) return;
+  const searchEl = document.getElementById("poSearch");
 
   if (monthEl && !monthEl.value) monthEl.value = getCurrentMonthISO();
 
@@ -876,20 +864,9 @@ function labelRequestType(t) {
   monthEl?.addEventListener("change", apply);
 
   let t = null;
-  function debouncedApply() {
+  searchEl?.addEventListener("input", () => {
     clearTimeout(t);
     t = setTimeout(apply, 250);
-  }
-  employeeEl?.addEventListener("input", debouncedApply);
-  placeEl?.addEventListener("input", debouncedApply);
-  productEl?.addEventListener("input", debouncedApply);
-
-  btnReset?.addEventListener("click", () => {
-    if (monthEl) monthEl.value = getCurrentMonthISO();
-    if (employeeEl) employeeEl.value = "";
-    if (placeEl) placeEl.value = "";
-    if (productEl) productEl.value = "";
-    apply();
   });
 })();
 
@@ -923,6 +900,23 @@ function setProductKpis({ orders = "—", pieces = "—", places = "—", topPro
   set("poKpiTopProduct", topProduct);
 }
 
+// Segna la consegna di un ordine (tutte le righe di dipendente + giorno + luogo); null = non consegnato
+async function saveOrderDelivery(userId, orderDate, place, deliveryDate) {
+  const { error } = await supabaseClient
+    .from("product_orders")
+    .update({ delivery_date: deliveryDate })
+    .eq("user_id", userId)
+    .eq("order_date", orderDate)
+    .eq("place", place);
+
+  if (error) {
+    console.error(error);
+    alert("Errore salvataggio data consegna. Controlla console.");
+    return;
+  }
+  await loadProducts();
+}
+
 async function loadProducts() {
   const el = document.getElementById("productsList");
   if (!el) return;
@@ -930,24 +924,15 @@ async function loadProducts() {
   setProductKpis({ orders: "…", pieces: "…", places: "…", topProduct: "…" });
 
   const monthEl = document.getElementById("poFilterMonth");
-  const employeeEl = document.getElementById("poFilterEmployee");
-  const placeEl = document.getElementById("poFilterPlace");
-  const productEl = document.getElementById("poFilterProduct");
-  const infoEl = document.getElementById("poFiltersInfo");
+  const searchEl = document.getElementById("poSearch");
 
   const month = (monthEl?.value || getCurrentMonthISO()).trim(); // YYYY-MM
-  const employeeQuery = (employeeEl?.value || "").trim().toLowerCase();
-  const placeQuery = (placeEl?.value || "").trim();
-  const productQuery = (productEl?.value || "").trim();
+  const search = (searchEl?.value || "").trim().toLowerCase();
 
   try {
-    const start = `${month}-01`;
-    const endDate = new Date(month + "-01T00:00:00");
-    endDate.setMonth(endDate.getMonth() + 1);
-    endDate.setDate(0);
-    const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
+    const { start, end } = monthRange(month);
 
-    let q = supabaseClient
+    const { data, error } = await supabaseClient
       .from("product_orders")
       .select(`
         id,
@@ -965,7 +950,6 @@ async function loadProducts() {
       .order("order_date", { ascending: false })
       .order("created_at", { ascending: false });
 
-    const { data, error } = await q;
     if (error) {
       console.error(error);
       el.textContent = "Errore caricamento prodotti.";
@@ -973,20 +957,17 @@ async function loadProducts() {
       return;
     }
 
-    const rawRows = (data || []);
-
     // Raggruppa in "ordine unico": (dipendente, data, luogo)
     const groupsMap = new Map(); // key -> group
-    for (const r of rawRows) {
+    for (const r of (data || [])) {
       const userId = r.user_id || "unknown";
-      const date = r.order_date;
       const place = r.place || "";
-      const key = `${userId}|${date}|${place}`;
+      const key = `${userId}|${r.order_date}|${place}`;
 
       const g = groupsMap.get(key) || {
         key,
         userId,
-        order_date: date,
+        order_date: r.order_date,
         delivery_date: r.delivery_date || null,
         place,
         full_name: r.profiles?.full_name || "Senza nome",
@@ -999,45 +980,23 @@ async function loadProducts() {
       // se una riga ha delivery_date, teniamo quella (dovrebbero essere uguali nel gruppo)
       if (r.delivery_date && !g.delivery_date) g.delivery_date = r.delivery_date;
 
-      g.items.push({
-        product_name: r.product_name,
-        quantity: r.quantity,
-      });
-
+      g.items.push({ product_name: r.product_name, quantity: r.quantity });
       groupsMap.set(key, g);
     }
 
     let groups = Array.from(groupsMap.values());
 
-    // Filtri (client-side) così un "ordine" resta completo anche con filtri prodotto/luogo
-    if (employeeQuery) {
-      groups = groups.filter(g => String(g.full_name || "").toLowerCase().includes(employeeQuery));
-    }
-    if (placeQuery) {
-      const pq = placeQuery.toLowerCase();
-      groups = groups.filter(g => String(g.place || "").toLowerCase().includes(pq));
-    }
-    if (productQuery) {
-      const prq = productQuery.toLowerCase();
-      groups = groups.filter(g => g.items.some(it => String(it.product_name || "").toLowerCase().includes(prq)));
+    // Ricerca unica (client-side) su dipendente, luogo e prodotti: un ordine resta sempre completo
+    if (search) {
+      groups = groups.filter(g =>
+        String(g.full_name || "").toLowerCase().includes(search) ||
+        String(g.place || "").toLowerCase().includes(search) ||
+        g.items.some(it => String(it.product_name || "").toLowerCase().includes(search))
+      );
     }
 
-    // Ordina per data desc, poi per created_at desc
-    groups.sort((a, b) => {
-      if (a.order_date !== b.order_date) return String(b.order_date).localeCompare(String(a.order_date));
-      return String(b.created_at || "").localeCompare(String(a.created_at || ""));
-    });
-
-    const totalPieces = groups.reduce((acc, g) => acc + g.items.reduce((a2, it) => a2 + (Number(it.quantity) || 0), 0), 0);
-    const totalLines = groups.reduce((acc, g) => acc + g.items.length, 0);
-
-    if (infoEl) {
-      const parts = [`Mese: ${fmtMonthYear(month)}`, `Ordini: ${groups.length}`, `Righe: ${totalLines}`, `Pezzi: ${totalPieces}`];
-      if (employeeQuery) parts.push(`Nome: "${employeeQuery}"`);
-      if (placeQuery) parts.push(`Luogo: "${placeQuery}"`);
-      if (productQuery) parts.push(`Prodotto: "${productQuery}"`);
-      infoEl.textContent = parts.join(" • ");
-    }
+    const piecesOf = (g) => g.items.reduce((acc, it) => acc + (Number(it.quantity) || 0), 0);
+    const totalPieces = groups.reduce((acc, g) => acc + piecesOf(g), 0);
 
     // KPI del mese (riflettono i dati filtrati mostrati sotto)
     const distinctPlaces = new Set(groups.map(g => String(g.place || "—"))).size;
@@ -1066,9 +1025,8 @@ async function loadProducts() {
     const pendingTotal = groups.filter(g => !g.delivery_date).length;
     updatePoStatusChips(pendingTotal, groups.length - pendingTotal);
 
-    if (!groups || groups.length === 0) {
-      el.textContent = "Nessun ordine prodotti in questo mese.";
-      setProductKpis({ orders: 0, pieces: 0, places: 0, topProduct: "—" });
+    if (!groups.length) {
+      el.innerHTML = `<div class="empty-state">${search ? "Nessun ordine trovato." : "Nessun ordine prodotti in questo mese."}</div>`;
       return;
     }
 
@@ -1077,10 +1035,10 @@ async function loadProducts() {
     if (adminPoStatusFilter === "pending") visibleGroups = groups.filter(g => !g.delivery_date);
     else if (adminPoStatusFilter === "delivered") visibleGroups = groups.filter(g => !!g.delivery_date);
 
-    if (visibleGroups.length === 0) {
-      el.textContent = adminPoStatusFilter === "pending"
+    if (!visibleGroups.length) {
+      el.innerHTML = `<div class="empty-state">${adminPoStatusFilter === "pending"
         ? "Niente da consegnare in questo mese ✅"
-        : "Nessun ordine consegnato in questo mese.";
+        : "Nessun ordine consegnato in questo mese."}</div>`;
       return;
     }
 
@@ -1090,167 +1048,73 @@ async function loadProducts() {
       arr.push(g);
       byDay.set(g.order_date, arr);
     }
+    const days = Array.from(byDay.entries()).sort(([a], [b]) => String(b).localeCompare(String(a)));
 
-    const days = Array.from(byDay.entries()).sort(([a],[b]) => String(b).localeCompare(String(a)));
+    const orderHtml = (g) => {
+      const done = !!g.delivery_date;
+      const chips = g.items
+        .map(it => `<span class="po-chip">${escapeHtml(it.product_name)} <b>×${escapeHtml(String(it.quantity))}</b></span>`)
+        .join("");
+      const attrs = `data-user-id="${escapeHtml(g.userId)}" data-order-date="${escapeHtml(String(g.order_date))}" data-place="${escapeHtml(encodeURIComponent(g.place || ""))}"`;
+      const deliveryVal = done ? String(g.delivery_date).slice(0, 10) : "";
 
-    const weekdayFmt = new Intl.DateTimeFormat("it-IT", { weekday: "short" });
-    const weekdayOf = (isoDay) => {
-      const d = new Date(isoDay + "T00:00:00");
-      return isNaN(d.getTime()) ? "" : weekdayFmt.format(d).replace(".", "");
+      return `
+        <div class="po-order${done ? " is-done" : " is-pending"}">
+          <div class="po-order-who">
+            <div class="po-order-placename">${escapeHtml(g.place || "—")}</div>
+            <div class="po-order-place">
+              <button class="po-order-emp" type="button" data-open-emp data-emp-id="${escapeHtml(g.userId)}" data-emp-name="${escapeHtml(g.full_name)}">${escapeHtml(g.full_name)}</button>
+              · ${escapeHtml(String(piecesOf(g)))} pz
+            </div>
+          </div>
+          <div class="po-order-items">${chips}</div>
+          <div class="po-order-deliver">
+            ${done
+              ? `<span class="po-status po-status--done">Consegnato ${escapeHtml(reqDayLabel(g.delivery_date))}</span>`
+              : `<button class="btn small po-deliver-today" type="button" data-po-deliver-today ${attrs}>✓ Consegnato oggi</button>`}
+            <input class="input po-deliver-input" type="date" aria-label="Data consegna" title="Data consegna (cancella per togliere)"
+              data-po-delivery-input ${attrs} value="${escapeHtml(deliveryVal)}" />
+          </div>
+        </div>`;
     };
 
-    const daysHtml = days.map(([day, dayGroups]) => {
-      const sorted = (dayGroups || []).slice().sort((a, b) => {
-        const an = String(a.full_name || "").toLowerCase();
-        const bn = String(b.full_name || "").toLowerCase();
-        if (an !== bn) return an.localeCompare(bn, "it", { sensitivity: "base" });
-        return String(a.place || "").localeCompare(String(b.place || ""), "it", { sensitivity: "base" });
-      });
-
-      const dayPieces = sorted.reduce((acc, gg) =>
-        acc + gg.items.reduce((a2, it) => a2 + (Number(it.quantity) || 0), 0)
-      , 0);
-
-      // Raggruppa per dipendente: se la stessa persona ha ordinato per più
-      // luoghi, in lista compare UNA riga compatta che si apre sui dettagli.
-      const byEmployee = new Map(); // userId -> { full_name, groups: [] }
-      for (const g of sorted) {
-        const e = byEmployee.get(g.userId) || { full_name: g.full_name || "Senza nome", groups: [] };
-        e.groups.push(g);
-        byEmployee.set(g.userId, e);
-      }
-
-      const employeesHtml = Array.from(byEmployee.entries()).map(([userId, emp]) => {
-        const empKey = `${day}|${userId}`;
-        const empPieces = emp.groups.reduce((acc, gg) =>
-          acc + gg.items.reduce((a2, it) => a2 + (Number(it.quantity) || 0), 0)
-        , 0);
-        const pending = emp.groups.filter(gg => !gg.delivery_date).length;
-        const placesCount = emp.groups.length;
-
-        const statusHtml = pending === 0
-          ? `<span class="po-status po-status--done">Consegnato</span>`
-          : `<span class="po-status po-status--pending">${pending} da consegnare</span>`;
-
-        const placeRowsHtml = emp.groups.map(g => {
-          const pieces = g.items.reduce((acc, it) => acc + (Number(it.quantity) || 0), 0);
-          const chips = g.items
-            .map(it => `<span class="po-chip">${escapeHtml(it.product_name)} <b>×${escapeHtml(String(it.quantity))}</b></span>`)
-            .join("");
-
-          const placeEnc = encodeURIComponent(g.place || "");
-          const deliveryVal = g.delivery_date ? String(g.delivery_date).slice(0, 10) : "";
-          const rowStatus = g.delivery_date
-            ? `<span class="po-status po-status--done">Consegnato</span>`
-            : `<span class="po-status po-status--pending">Da consegnare</span>`;
-
-          return `
-            <div class="po-order">
-              <div class="po-order-who">
-                <div class="po-order-placename">${escapeHtml(g.place || "—")}</div>
-                <div class="po-order-place">${escapeHtml(String(pieces))} pz</div>
-              </div>
-              <div class="po-order-items">${chips}</div>
-              <div class="po-order-deliver">
-                ${rowStatus}
-                <input
-                  class="input po-deliver-input"
-                  type="date"
-                  aria-label="Data consegna"
-                  data-po-delivery-input
-                  data-user-id="${escapeHtml(g.userId)}"
-                  data-order-date="${escapeHtml(String(g.order_date))}"
-                  data-place="${escapeHtml(placeEnc)}"
-                  value="${escapeHtml(deliveryVal)}"
-                />
-              </div>
-            </div>
-          `;
-        }).join("");
-
-        // Con un solo luogo l'accordion non comprime nulla: riga già aperta
-        const openAttr = (emp.groups.length === 1 || adminOpenProductEmployeeKeys.has(empKey)) ? "open" : "";
-
-        return `
-          <details class="po-emp" data-emp-key="${escapeHtml(empKey)}" ${openAttr}>
-            <summary class="po-emp-head">
-              <span class="po-emp-name">${escapeHtml(emp.full_name)}</span>
-              <span class="po-emp-meta">
-                <span class="po-emp-places">${placesCount} luog${placesCount === 1 ? "o" : "hi"}</span>
-                <span class="po-day-pz">${escapeHtml(String(empPieces))} pz</span>
-                ${statusHtml}
-                <span class="po-chev">▾</span>
-              </span>
-            </summary>
-            <div class="po-emp-body">${placeRowsHtml}</div>
-          </details>
-        `;
-      }).join("");
-
-      // Giorno interamente consegnato: attenuato (solo nella vista "Tutti"),
-      // così l'occhio cade su ciò che è ancora da lavorare.
+    el.innerHTML = `<div class="po-table">` + days.map(([day, dayGroups]) => {
+      // Prima ciò che è da consegnare, poi per dipendente e luogo
+      const sorted = dayGroups.slice().sort((a, b) =>
+        (!!a.delivery_date - !!b.delivery_date) ||
+        String(a.full_name).localeCompare(String(b.full_name), "it", { sensitivity: "base" }) ||
+        String(a.place).localeCompare(String(b.place), "it", { sensitivity: "base" })
+      );
+      const dayPieces = sorted.reduce((acc, g) => acc + piecesOf(g), 0);
+      // Giorno interamente consegnato: attenuato (solo nella vista "Tutti")
       const dayDone = adminPoStatusFilter === "all" && sorted.every(g => !!g.delivery_date);
 
       return `
-        <div class="po-day${dayDone ? " po-day--done" : ""}">
+        <section class="po-day${dayDone ? " po-day--done" : ""}">
           <div class="po-day-head">
-            <div class="po-day-date">${escapeHtml(weekdayOf(day))} ${escapeHtml(formatDateIT(day))}</div>
+            <div class="po-day-date">${escapeHtml(reqDayLabel(day))}</div>
             <div class="po-day-sum">
-              <span>${byEmployee.size} dipendent${byEmployee.size === 1 ? "e" : "i"} · ${escapeHtml(String(sorted.length))} ordine${sorted.length === 1 ? "" : "i"}</span>
+              <span>${sorted.length} ordin${sorted.length === 1 ? "e" : "i"}</span>
               <span class="po-day-pz">${escapeHtml(String(dayPieces))} pz</span>
             </div>
           </div>
-          ${employeesHtml}
-        </div>
-      `;
-    }).join("");
+          ${sorted.map(orderHtml).join("")}
+        </section>`;
+    }).join("") + `</div>`;
 
-    el.innerHTML = `<div class="po-table">${daysHtml}</div>`;
+    const orderKey = (n) => [n.getAttribute("data-user-id"), n.getAttribute("data-order-date"), decodeURIComponent(n.getAttribute("data-place") || "")];
 
-    // Ricorda quali dipendenti sono aperti (sopravvive al ricaricamento della lista)
-    el.querySelectorAll("details.po-emp[data-emp-key]").forEach((d) => {
-      d.addEventListener("toggle", () => {
-        const k = d.getAttribute("data-emp-key");
-        if (!k) return;
-        if (d.open) adminOpenProductEmployeeKeys.add(k);
-        else adminOpenProductEmployeeKeys.delete(k);
+    el.querySelectorAll("[data-po-deliver-today]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.disabled = true;
+        saveOrderDelivery(...orderKey(btn), getTodayISO());
       });
     });
-
-    // Bind consegna: autosalvataggio quando cambi la data
-    const saveTimers = new Map(); // key -> timer
     el.querySelectorAll("[data-po-delivery-input]").forEach((input) => {
-      input.addEventListener("change", async () => {
-        const userId = input.getAttribute("data-user-id");
-        const orderDate = input.getAttribute("data-order-date");
-        const placeEnc = input.getAttribute("data-place") || "";
-        const place = decodeURIComponent(placeEnc);
-        const deliveryDate = (input.value || "").trim() || null;
-
-        const key = `${userId}|${orderDate}|${placeEnc}`;
-        clearTimeout(saveTimers.get(key));
-
-        // debounce leggero (evita update multipli)
-        const t = setTimeout(async () => {
-          const { error } = await supabaseClient
-            .from("product_orders")
-            .update({ delivery_date: deliveryDate })
-            .eq("user_id", userId)
-            .eq("order_date", orderDate)
-            .eq("place", place);
-
-          if (error) {
-            console.error(error);
-            alert("Errore salvataggio data consegna. Controlla console.");
-            return;
-          }
-
-          await loadProducts();
-        }, 250);
-
-        saveTimers.set(key, t);
-      });
+      input.addEventListener("change", () => saveOrderDelivery(...orderKey(input), (input.value || "").trim() || null));
     });
+
+    bindOpenEmployeeButtons(el);
 
   } catch (err) {
     console.error(err);
@@ -1258,23 +1122,49 @@ async function loadProducts() {
   }
 }
 
+// Giorni di calendario tra due date ISO (estremi inclusi)
+function daysInclusive(startISO, endISO) {
+  const a = new Date(startISO + "T00:00:00");
+  const b = new Date((endISO || startISO) + "T00:00:00");
+  return Math.round((b - a) / 86400000) + 1;
+}
+
+const fmtReqDay = new Intl.DateTimeFormat("it-IT", { weekday: "short", day: "numeric", month: "short" });
+function reqDayLabel(iso) {
+  const d = new Date(String(iso).slice(0, 10) + "T00:00:00");
+  return isNaN(d.getTime()) ? "—" : fmtReqDay.format(d);
+}
+
+// "Quando" leggibile: ferie con intervallo e giorni, permessi con giorno (e ora)
+function requestWhenLabel(r) {
+  if (r.type === "ferie") {
+    const end = r.end_date || r.start_date;
+    const n = daysInclusive(r.start_date, end);
+    return end === r.start_date
+      ? `${reqDayLabel(r.start_date)} (1 giorno)`
+      : `dal ${reqDayLabel(r.start_date)} al ${reqDayLabel(end)} (${n} giorni)`;
+  }
+  return r.time ? `${reqDayLabel(r.start_date)} alle ${fmtTime(r.time)}` : reqDayLabel(r.start_date);
+}
+
 async function loadRequests() {
   const el = document.getElementById("requestsList");
   if (!el) return;
   el.textContent = "Caricamento...";
 
-  const statusEl = document.getElementById("reqFilterStatus");
   const typeEl = document.getElementById("reqFilterType");
   const monthEl = document.getElementById("reqFilterMonth");
   const employeeEl = document.getElementById("reqFilterEmployee");
-  const infoEl = document.getElementById("reqFiltersInfo");
+  const resetBtn = document.getElementById("reqFiltersReset");
 
-  const status = (statusEl?.value || "").trim();
+  const status = adminReqStatusFilter;
   const type = (typeEl?.value || "").trim();
   const month = (monthEl?.value || "").trim(); // YYYY-MM
   const employeeQuery = (employeeEl?.value || "").trim().toLowerCase();
+  if (resetBtn) resetBtn.hidden = !(type || month || employeeQuery);
 
   try {
+    // Lo stato si filtra qui sotto: così i bottoni mostrano sempre i conteggi
     let q = supabaseClient
       .from("requests")
       .select(`
@@ -1291,16 +1181,11 @@ async function loadRequests() {
       `)
       .order("created_at", { ascending: false });
 
-    if (status) q = q.eq("status", status);
     if (type) q = q.eq("type", type);
 
     // filtro mese sulla data richiesta (start_date)
     if (month) {
-      const start = `${month}-01`;
-      const endDate = new Date(month + "-01T00:00:00");
-      endDate.setMonth(endDate.getMonth() + 1);
-      endDate.setDate(0);
-      const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
+      const { start, end } = monthRange(month);
       q = q.gte("start_date", start).lte("start_date", end);
     }
 
@@ -1312,129 +1197,63 @@ async function loadRequests() {
       return;
     }
 
-    let rows = (data || []);
+    let all = (data || []);
 
     // filtro per nome dipendente (client-side, perché il join non è sempre filtrabile con semplicità)
     if (employeeQuery) {
-      rows = rows.filter(r => String(r.profiles?.full_name || "").toLowerCase().includes(employeeQuery));
+      all = all.filter(r => String(r.profiles?.full_name || "").toLowerCase().includes(employeeQuery));
     }
 
-    if (infoEl) {
-      const parts = [];
-      if (status) parts.push(`Stato: ${status}`);
-      if (type) parts.push(`Tipo: ${type}`);
-      if (month) parts.push(`Mese: ${fmtMonthYear(month)}`);
-      if (employeeQuery) parts.push(`Nome: "${employeeQuery}"`);
-      infoEl.textContent = `${rows.length} risultato/i` + (parts.length ? ` • ${parts.join(" • ")}` : "");
-    }
+    const counts = { inviata: 0, approvata: 0, rifiutata: 0 };
+    for (const r of all) if (r.status in counts) counts[r.status]++;
+    const labels = { inviata: "Da approvare", approvata: "Approvate", rifiutata: "Rifiutate", "": "Tutte" };
+    document.querySelectorAll("[data-req-status]").forEach((b) => {
+      const s = b.getAttribute("data-req-status");
+      const c = s ? counts[s] : all.length;
+      b.textContent = `${labels[s]} (${c})`;
+    });
+
+    const rows = status ? all.filter(r => r.status === status) : all;
+
+    // Da approvare: prima le più vicine nel tempo; le altre dalla più recente
+    rows.sort((a, b) => status === "inviata"
+      ? String(a.start_date).localeCompare(String(b.start_date))
+      : String(b.start_date).localeCompare(String(a.start_date)));
 
     // Salva per export (dati già filtrati come in UI)
     adminCurrentRequestRows = rows.slice();
 
-    if (!rows || rows.length === 0) {
-      el.textContent = "Nessuna richiesta.";
+    if (!rows.length) {
+      el.innerHTML = `<div class="empty-state">${status === "inviata" ? "Nessuna richiesta da approvare ✅" : "Nessuna richiesta."}</div>`;
       return;
     }
 
-    // Raggruppa per dipendente, poi per giorno (start_date)
-    const byEmployee = new Map(); // user_id -> rows[]
-    for (const r of rows) {
-      const userId = r.user_id || r.profiles?.id || "unknown";
-      const arr = byEmployee.get(userId) || [];
-      arr.push(r);
-      byEmployee.set(userId, arr);
-    }
+    el.innerHTML = `<div class="req-list">${rows.map(r => {
+      const who = (r.profiles?.full_name || "").trim() || "Senza nome";
+      const note = r.note ? String(r.note).trim() : "";
+      const sent = r.created_at ? `inviata ${reqDayLabel(r.created_at)}` : "";
 
-    const employees = Array.from(byEmployee.entries()).sort(([, aArr], [, bArr]) => {
-      const aName = (aArr?.[0]?.profiles?.full_name || "Senza nome");
-      const bName = (bArr?.[0]?.profiles?.full_name || "Senza nome");
-      return String(aName).localeCompare(String(bName), "it", { sensitivity: "base" });
-    });
-
-    el.innerHTML = employees.map(([userId, empRows]) => {
-      const sorted = (empRows || []).slice().sort((a, b) => {
-        // ORDINE PER DATA (crescente), poi tipo, poi created_at
-        if (a.start_date !== b.start_date) return String(a.start_date).localeCompare(String(b.start_date));
-        if (a.type !== b.type) return String(a.type).localeCompare(String(b.type));
-        return String(a.created_at || "").localeCompare(String(b.created_at || ""));
-      });
-
-      const byDay = new Map(); // start_date -> rows[]
-      for (const r of sorted) {
-        const arr = byDay.get(r.start_date) || [];
-        arr.push(r);
-        byDay.set(r.start_date, arr);
-      }
-
-      const days = Array.from(byDay.entries()).sort(([a],[b]) => String(a).localeCompare(String(b)));
-
-      const rowsHtml = days.map(([day, dayRows]) => {
-        const header = `
-          <div class="rowItem rowGroup">
-            <div><strong>${escapeHtml(formatDateIT(day))}</strong></div>
-            <div class="muted">${escapeHtml(String(dayRows.length))} richiesta/e</div>
-            <div>—</div>
-          </div>
-        `;
-
-        const lines = (dayRows || []).map(r => {
-          const when =
-            r.type === "ferie"
-              ? `Dal ${formatDateIT(r.start_date)} al ${formatDateIT(r.end_date)}`
-              : (r.time ? `${formatDateIT(r.start_date)} • ${fmtTime(r.time)}` : `${formatDateIT(r.start_date)}`);
-
-          const statusPill =
-            r.status === "approvata"
-              ? `<span class="pill ok">Approvata</span>`
-              : (r.status === "rifiutata"
-                  ? `<span class="pill warn" style="border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.12);">Rifiutata</span>`
-                  : `<span class="pill">Inviata</span>`);
-
-          const note = r.note ? String(r.note).trim() : "";
-          const noteSmall = note ? ` • ${note}` : "";
-
-          const actions =
-            r.status === "inviata"
-              ? `
-                  <span class="req-actions">
-                    <button class="btn small" data-req-action="approve" data-req-id="${r.id}">Approva</button>
-                    <button class="btn small" data-req-action="reject" data-req-id="${r.id}" style="border-color: rgba(255,107,107,.35);">Rifiuta</button>
-                  </span>
-                `
-              : "";
-
-          return `
-            <div class="rowItem">
-              <div><strong>${escapeHtml(labelRequestType(r.type))}</strong></div>
-              <div class="muted">${escapeHtml(when + noteSmall)}</div>
-              <div>
-                ${statusPill}
-                ${actions}
-              </div>
-            </div>
-          `;
-        }).join("");
-
-        return header + lines;
-      }).join("");
-
-      const who = (sorted?.[0]?.profiles?.full_name || "Senza nome");
-      const empKey = encodeURIComponent(String(userId));
-      const openAttr = adminOpenRequestEmployeeKeys.has(empKey) ? "open" : "";
+      const right = r.status === "inviata"
+        ? `<div class="req-actions">
+             <button class="btn small req-approve" type="button" data-req-action="approve" data-req-id="${escapeHtml(String(r.id))}">Approva</button>
+             <button class="btn small danger" type="button" data-req-action="reject" data-req-id="${escapeHtml(String(r.id))}">Rifiuta</button>
+           </div>`
+        : `<span class="req-status req-status--${escapeHtml(r.status)}">${r.status === "approvata" ? "Approvata" : "Rifiutata"}</span>`;
 
       return `
-        <details class="dayCard empCard acc" data-emp-key="${escapeHtml(empKey)}" ${openAttr}>
-          <summary class="dayHeader acc-head">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <strong>${escapeHtml(who)}</strong>
-              <button class="btn small" type="button" data-open-emp data-emp-id="${escapeHtml(String(userId))}" data-emp-name="${escapeHtml(who)}">Scheda</button>
-              <span class="muted">${escapeHtml(String(sorted.length))} righe</span>
+        <div class="req-card${r.status === "inviata" ? " is-pending" : ""}">
+          <div class="req-main">
+            <div class="req-top">
+              <button class="req-who" type="button" data-open-emp data-emp-id="${escapeHtml(String(r.user_id))}" data-emp-name="${escapeHtml(who)}">${escapeHtml(who)}</button>
+              <span class="req-type">${escapeHtml(labelRequestType(r.type))}</span>
             </div>
-          </summary>
-          <div class="rows">${rowsHtml}</div>
-        </details>
-      `;
-    }).join("");
+            <div class="req-when">${escapeHtml(requestWhenLabel(r))}</div>
+            ${note ? `<div class="req-note">“${escapeHtml(note)}”</div>` : ""}
+            ${sent ? `<div class="req-sent muted">${escapeHtml(sent)}</div>` : ""}
+          </div>
+          <div class="req-side">${right}</div>
+        </div>`;
+    }).join("")}</div>`;
 
     el.querySelectorAll("[data-req-action]").forEach(btn => {
       btn.addEventListener("click", async () => {
@@ -1443,6 +1262,7 @@ async function loadRequests() {
         if (!id || !action) return;
 
         const nextStatus = action === "approve" ? "approvata" : "rifiutata";
+        btn.disabled = true;
         const { error } = await supabaseClient
           .from("requests")
           .update({ status: nextStatus })
@@ -1451,20 +1271,11 @@ async function loadRequests() {
         if (error) {
           console.error(error);
           alert("Errore aggiornamento stato. Controlla console.");
+          btn.disabled = false;
           return;
         }
 
         await loadRequests();
-      });
-    });
-
-    // Ricorda stato aperto/chiuso (UI)
-    el.querySelectorAll('details[data-emp-key]').forEach((d) => {
-      d.addEventListener("toggle", () => {
-        const k = d.getAttribute("data-emp-key");
-        if (!k) return;
-        if (d.open) adminOpenRequestEmployeeKeys.add(k);
-        else adminOpenRequestEmployeeKeys.delete(k);
       });
     });
 
@@ -1974,11 +1785,10 @@ adminReqExportXlsxBtn?.addEventListener("click", () => {
     return;
   }
 
-  const statusEl = document.getElementById("reqFilterStatus");
   const typeEl = document.getElementById("reqFilterType");
   const monthEl = document.getElementById("reqFilterMonth");
 
-  const status = (statusEl?.value || "").trim();
+  const status = adminReqStatusFilter;
   const type = (typeEl?.value || "").trim();
   const month = (monthEl?.value || "").trim();
   const monthLabel = month ? fmtMonthYear(month) : "tutte";
