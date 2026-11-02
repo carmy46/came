@@ -1147,6 +1147,22 @@ function requestWhenLabel(r) {
   return r.time ? `${reqDayLabel(r.start_date)} alle ${fmtTime(r.time)}` : reqDayLabel(r.start_date);
 }
 
+// Elimina una richiesta (qualsiasi stato), dopo conferma. true se eliminata.
+async function deleteRequest(r) {
+  const who = (r.profiles?.full_name || adminEmpSelected?.full_name || "").trim();
+  const what = `${labelRequestType(r.type)} – ${requestWhenLabel(r)}`;
+  const statusTxt = r.status === "approvata" ? "\n\nAttenzione: è già stata APPROVATA." : "";
+  if (!confirm(`Eliminare questa richiesta${who ? ` di ${who}` : ""}?\n\n${what}${statusTxt}\n\nL'operazione non si può annullare.`)) return false;
+
+  const { error } = await supabaseClient.from("requests").delete().eq("id", r.id);
+  if (error) {
+    console.error(error);
+    alert("Errore nell'eliminazione della richiesta.");
+    return false;
+  }
+  return true;
+}
+
 async function loadRequests() {
   const el = document.getElementById("requestsList");
   if (!el) return;
@@ -1233,12 +1249,18 @@ async function loadRequests() {
       const note = r.note ? String(r.note).trim() : "";
       const sent = r.created_at ? `inviata ${reqDayLabel(r.created_at)}` : "";
 
+      const delBtn = `<button class="btn small ghost icon-btn req-del" type="button" data-req-del="${escapeHtml(String(r.id))}"
+        title="Elimina richiesta" aria-label="Elimina richiesta di ${escapeHtml(who)}">🗑</button>`;
       const right = r.status === "inviata"
         ? `<div class="req-actions">
              <button class="btn small req-approve" type="button" data-req-action="approve" data-req-id="${escapeHtml(String(r.id))}">Approva</button>
              <button class="btn small danger" type="button" data-req-action="reject" data-req-id="${escapeHtml(String(r.id))}">Rifiuta</button>
+             ${delBtn}
            </div>`
-        : `<span class="req-status req-status--${escapeHtml(r.status)}">${r.status === "approvata" ? "Approvata" : "Rifiutata"}</span>`;
+        : `<div class="req-actions">
+             <span class="req-status req-status--${escapeHtml(r.status)}">${r.status === "approvata" ? "Approvata" : "Rifiutata"}</span>
+             ${delBtn}
+           </div>`;
 
       return `
         <div class="req-card${r.status === "inviata" ? " is-pending" : ""}">
@@ -1276,6 +1298,13 @@ async function loadRequests() {
         }
 
         await loadRequests();
+      });
+    });
+
+    el.querySelectorAll("[data-req-del]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const r = rows.find(x => String(x.id) === btn.getAttribute("data-req-del"));
+        if (r && await deleteRequest(r)) await loadRequests();
       });
     });
 
@@ -1724,15 +1753,14 @@ async function loadEmpRequests() {
         const note = r.note ? String(r.note).trim() : "";
         const noteSmall = note ? ` • ${note}` : "";
 
-        const actions =
-          r.status === "inviata"
-            ? `
-                <span class="req-actions">
-                  <button class="btn small" data-emp-req-action="approve" data-req-id="${r.id}">Approva</button>
-                  <button class="btn small" data-emp-req-action="reject" data-req-id="${r.id}" style="border-color: rgba(255,107,107,.35);">Rifiuta</button>
-                </span>
-              `
-            : "";
+        const actions = `
+          <span class="req-actions">
+            ${r.status === "inviata" ? `
+              <button class="btn small" data-emp-req-action="approve" data-req-id="${r.id}">Approva</button>
+              <button class="btn small" data-emp-req-action="reject" data-req-id="${r.id}" style="border-color: rgba(255,107,107,.35);">Rifiuta</button>` : ""}
+            <button class="btn small ghost icon-btn" type="button" data-emp-req-del="${r.id}" title="Elimina richiesta" aria-label="Elimina richiesta">🗑</button>
+          </span>
+        `;
 
         return `
           <div class="rowItem">
@@ -1767,6 +1795,13 @@ async function loadEmpRequests() {
         await loadEmpRequests();
         const view = document.getElementById("view-requests");
         if (view?.classList.contains("active")) loadRequests();
+      });
+    });
+
+    empRequestsListEl.querySelectorAll("[data-emp-req-del]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const r = (empReqRows || []).find(x => String(x.id) === btn.getAttribute("data-emp-req-del"));
+        if (r && await deleteRequest(r)) await loadEmpRequests();
       });
     });
 

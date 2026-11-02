@@ -2879,6 +2879,7 @@ body.page-admin .req-when{ font-weight:600; }
 body.page-admin .req-note{ color:var(--muted); font-style:italic; overflow-wrap:anywhere; }
 body.page-admin .req-sent{ font-size:12px; margin:0; }
 body.page-admin .req-side{ flex:0 0 auto; }
+body.page-admin .req-side .req-actions{ align-items:center; }
 body.page-admin .req-approve{ background:var(--accent2); border-color:var(--accent2); color:#08211d; font-weight:800; }
 body.page-admin .req-status{
   font-size:11px;
@@ -2896,7 +2897,8 @@ body.page-admin .req-status--rifiutata{ color:#fff; background:rgba(240,119,111,
   body.page-admin .req-card{ flex-direction:column; align-items:stretch; }
   body.page-admin .req-actions{ display:flex; justify-content:stretch; }
   body.page-admin .req-actions .btn{ flex:1 1 0; }
-  body.page-admin .req-side > .req-status{ align-self:flex-start; }
+  body.page-admin .req-actions .req-del{ flex:0 0 auto; }
+  body.page-admin .req-actions .req-status{ margin-right:auto; align-self:center; }
 }
 
 /* ============================================================= */
