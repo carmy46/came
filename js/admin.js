@@ -1421,6 +1421,95 @@ async function loadRequests() {
 }
 
 // ============================
+// STORICO MODIFICHE ORE (solo admin)
+// Lo scrive un trigger del database (tabella work_log_history): ogni modifica o eliminazione di una
+// registrazione ore, con com'era prima, com'è diventata, chi l'ha fatta e quando.
+// Se la tabella non esiste (migrazione non ancora applicata) il riquadro resta nascosto.
+// ============================
+let empHistoryByLog = new Map(); // id registrazione -> numero di modifiche (per il segno "modificata")
+
+const HIST_FIELDS = [
+  ["work_date", "Data", (v) => (v ? formatDateIT(String(v).slice(0, 10)) : "—")],
+  ["start_time", "Inizio", (v) => fmtTime(v)],
+  ["end_time", "Fine", (v) => fmtTime(v)],
+  ["break_start", "Inizio pausa", (v) => (v ? fmtTime(v) : "nessuna")],
+  ["break_end", "Fine pausa", (v) => (v ? fmtTime(v) : "nessuna")],
+  ["location", "Luogo", (v) => v || "—"],
+  ["activity", "Attività", (v) => v || "—"],
+];
+
+const fmtHistWhen = new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+function histRowSummary(d) {
+  const pausa = d.break_start && d.break_end ? ` (pausa ${fmtTime(d.break_start)}-${fmtTime(d.break_end)})` : "";
+  return `${formatDateIT(String(d.work_date).slice(0, 10))}, ${fmtTime(d.start_time)}-${fmtTime(d.end_time)}${pausa} • ${d.location || "—"} • ${d.activity || "—"}`;
+}
+
+async function loadEmpHistory(empId, ym) {
+  const box = document.getElementById("empHistory");
+  const listEl = document.getElementById("empHistoryList");
+  const summaryEl = document.getElementById("empHistorySummary");
+  empHistoryByLog = new Map();
+  if (!box || !listEl) return;
+
+  const { data, error } = await fetchAllRows(
+    "work_log_history",
+    "id, work_log_id, action, changed_by_role, changed_at, old_data, new_data",
+    (q) => q.eq("user_id", empId).order("changed_at", { ascending: false })
+  );
+  if (adminEmpSelected?.id !== empId) return;
+  if (error) {
+    // tabella assente o non leggibile: niente storico, nessun errore a schermo
+    box.hidden = true;
+    return;
+  }
+
+  const all = data || [];
+  for (const h of all) {
+    if (h.action !== "update") continue;
+    const k = String(h.work_log_id);
+    empHistoryByLog.set(k, (empHistoryByLog.get(k) || 0) + 1);
+  }
+
+  // Del mese mostrato: eventi che toccano una registrazione di quel mese (prima o dopo la modifica)
+  const inMonth = (d) => d && String(d.work_date || "").slice(0, 7) === ym;
+  const events = all.filter((h) => inMonth(h.old_data) || inMonth(h.new_data));
+
+  box.hidden = false;
+  if (summaryEl) {
+    summaryEl.textContent = events.length
+      ? `Storico modifiche (${events.length}) – ${fmtMonthYear(ym)}`
+      : `Storico modifiche – nessuna in ${fmtMonthYear(ym)}`;
+  }
+  if (!events.length) {
+    listEl.innerHTML = `<div class="muted">Nessuna registrazione di questo mese è stata modificata o eliminata.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = events.map((h) => {
+    const who = h.changed_by_role === "admin" ? "dall'amministratore" : "dal dipendente";
+    const when = fmtHistWhen.format(new Date(h.changed_at));
+    if (h.action === "delete") {
+      return `
+        <div class="hist-item is-delete">
+          <div class="hist-head"><strong>Eliminata</strong> il ${escapeHtml(when)} ${escapeHtml(who)}</div>
+          <div class="hist-line">${escapeHtml(histRowSummary(h.old_data))}</div>
+        </div>`;
+    }
+    const changes = HIST_FIELDS
+      .filter(([key]) => String(h.old_data?.[key] ?? "") !== String(h.new_data?.[key] ?? ""))
+      .map(([key, label, fmt]) =>
+        `<div class="hist-line"><span class="muted">${escapeHtml(label)}:</span> ${escapeHtml(fmt(h.old_data[key]))} <span class="hist-arrow">→</span> <strong>${escapeHtml(fmt(h.new_data[key]))}</strong></div>`)
+      .join("");
+    return `
+      <div class="hist-item">
+        <div class="hist-head"><strong>Modificata</strong> il ${escapeHtml(when)} ${escapeHtml(who)}</div>
+        ${changes}
+      </div>`;
+  }).join("");
+}
+
+// ============================
 // SCHEDA DIPENDENTE (sezione Dipendenti)
 // ============================
 async function loadEmpHours() {
@@ -1430,6 +1519,11 @@ async function loadEmpHours() {
 
   const ym = (empHoursMonthEl?.value || getCurrentMonthISO()).trim();
   if (empHoursMonthEl && empHoursMonthEl.value !== ym) empHoursMonthEl.value = ym;
+
+  // Storico modifiche (prima delle righe: serve per il segno "modificata")
+  const histEmpId = adminEmpSelected.id;
+  await loadEmpHistory(histEmpId, ym);
+  if (adminEmpSelected?.id !== histEmpId) return; // nel frattempo è stato aperto un altro dipendente
 
   const start = `${ym}-01`;
   const endDate = new Date(ym + "-01T00:00:00");
@@ -1497,9 +1591,13 @@ async function loadEmpHours() {
     const lines = sorted.map(r => {
       const pausa = (r.break_start && r.break_end) ? ` • pausa ${fmtTime(r.break_start)}-${fmtTime(r.break_end)}` : "";
       const when = `${fmtTime(r.start_time)}-${fmtTime(r.end_time)}${pausa}`;
+      const edits = empHistoryByLog.get(String(r.id)) || 0;
+      const editedTag = edits
+        ? ` <span class="pill hist-pill" title="Questa registrazione è stata modificata ${edits === 1 ? "1 volta" : edits + " volte"}: vedi Storico modifiche">✎ modificata</span>`
+        : "";
       return `
         <div class="rowItem">
-          <div><strong>${escapeHtml(when)}</strong></div>
+          <div><strong>${escapeHtml(when)}</strong>${editedTag}</div>
           <div>${escapeHtml(r.location)} • ${escapeHtml(r.activity)}</div>
           <div>${escapeHtml(formatHM(netMinutes(r)))}</div>
           <div class="row-actions">

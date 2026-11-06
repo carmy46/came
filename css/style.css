@@ -3410,3 +3410,37 @@ body.page-admin .emp-phone-row{ display: flex; gap: 8px; }
 body.page-admin .emp-phone-row .input{ flex: 1 1 auto; min-width: 0; }
 body.page-admin .emp-phone .msg{ margin: 4px 0 0; }
 body.page-admin .emp-phone .msg:empty{ display: none; }
+
+/* Scheda dipendente: storico modifiche ore (solo admin) */
+body.page-admin .hist-box{
+  margin: 0 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.04);
+}
+body.page-admin .hist-box[hidden]{ display: none; }
+body.page-admin .hist-box > summary{
+  cursor: pointer;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 14px;
+}
+body.page-admin .hist-list{ padding: 0 14px 10px; display: grid; gap: 8px; }
+body.page-admin .hist-item{
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warn);
+  border-radius: 10px;
+  font-size: 14px;
+}
+body.page-admin .hist-item.is-delete{ border-left-color: var(--danger); }
+body.page-admin .hist-head{ margin-bottom: 4px; }
+body.page-admin .hist-line{ line-height: 1.5; }
+body.page-admin .hist-arrow{ color: var(--muted); padding: 0 2px; }
+body.page-admin .hist-pill{
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-color: rgba(230,184,77,.45);
+  background: rgba(230,184,77,.12);
+}
