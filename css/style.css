@@ -3444,3 +3444,9 @@ body.page-admin .hist-pill{
   border-color: rgba(230,184,77,.45);
   background: rgba(230,184,77,.12);
 }
+
+/* Panoramica: modifiche recenti dei dipendenti */
+body.page-admin .ov-hist{ margin-bottom: 18px; }
+body.page-admin .ov-hist[hidden], body.page-admin #ovHistHead[hidden]{ display: none; }
+body.page-admin .hist-list--flat{ padding: 0; }
+body.page-admin .ov-hist > .btn{ margin-top: 8px; }

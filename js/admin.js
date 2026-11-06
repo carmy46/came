@@ -345,6 +345,9 @@ function bindOpenEmployeeButtons(rootEl) {
       const id = btn.getAttribute("data-emp-id");
       const name = btn.getAttribute("data-emp-name") || "Senza nome";
       if (!id) return;
+      // dalle modifiche recenti: apre la scheda direttamente sul mese della registrazione toccata
+      const month = btn.getAttribute("data-emp-month");
+      if (month && /^\d{4}-\d{2}$/.test(month) && empHoursMonthEl) empHoursMonthEl.value = month;
       openEmployee({ id, full_name: name });
     });
   });
@@ -555,6 +558,7 @@ async function loadOverview() {
   set("ovPendingRequests", "…");
   set("ovPendingOrders", "…");
   if (listEl) listEl.textContent = "Caricamento...";
+  loadRecentEdits(); // modifiche recenti dei dipendenti (indipendente dal mese scelto)
 
   // Ore del mese (tutti) + totale per dipendente
   try {
@@ -1489,24 +1493,88 @@ async function loadEmpHistory(empId, ym) {
   listEl.innerHTML = events.map((h) => {
     const who = h.changed_by_role === "admin" ? "dall'amministratore" : "dal dipendente";
     const when = fmtHistWhen.format(new Date(h.changed_at));
-    if (h.action === "delete") {
-      return `
-        <div class="hist-item is-delete">
-          <div class="hist-head"><strong>Eliminata</strong> il ${escapeHtml(when)} ${escapeHtml(who)}</div>
-          <div class="hist-line">${escapeHtml(histRowSummary(h.old_data))}</div>
-        </div>`;
-    }
-    const changes = HIST_FIELDS
-      .filter(([key]) => String(h.old_data?.[key] ?? "") !== String(h.new_data?.[key] ?? ""))
-      .map(([key, label, fmt]) =>
-        `<div class="hist-line"><span class="muted">${escapeHtml(label)}:</span> ${escapeHtml(fmt(h.old_data[key]))} <span class="hist-arrow">→</span> <strong>${escapeHtml(fmt(h.new_data[key]))}</strong></div>`)
-      .join("");
     return `
-      <div class="hist-item">
-        <div class="hist-head"><strong>Modificata</strong> il ${escapeHtml(when)} ${escapeHtml(who)}</div>
-        ${changes}
+      <div class="hist-item${h.action === "delete" ? " is-delete" : ""}">
+        <div class="hist-head"><strong>${h.action === "delete" ? "Eliminata" : "Modificata"}</strong> il ${escapeHtml(when)} ${escapeHtml(who)}</div>
+        ${histChangeLinesHtml(h)}
       </div>`;
   }).join("");
+}
+
+// Righe che dicono cosa è cambiato: una per ogni campo diverso (modifica) oppure il riassunto della registrazione (eliminazione)
+function histChangeLinesHtml(h) {
+  if (h.action === "delete") {
+    return `<div class="hist-line">${escapeHtml(histRowSummary(h.old_data))}</div>`;
+  }
+  return HIST_FIELDS
+    .filter(([key]) => String(h.old_data?.[key] ?? "") !== String(h.new_data?.[key] ?? ""))
+    .map(([key, label, fmt]) =>
+      `<div class="hist-line"><span class="muted">${escapeHtml(label)}:</span> ${escapeHtml(fmt(h.old_data[key]))} <span class="hist-arrow">→</span> <strong>${escapeHtml(fmt(h.new_data[key]))}</strong></div>`)
+    .join("");
+}
+
+// Panoramica: modifiche recenti fatte dai dipendenti alle proprie ore (ultimi 14 giorni).
+// Le modifiche fatte dall'admin non si mostrano: le conosce già, e restano nella scheda del dipendente.
+const OV_HIST_DAYS = 14;
+const OV_HIST_SHOWN = 8;
+let ovHistExpanded = false;
+
+async function loadRecentEdits() {
+  const headEl = document.getElementById("ovHistHead");
+  const infoEl = document.getElementById("ovHistInfo");
+  const listEl = document.getElementById("ovHistList");
+  if (!listEl) return;
+
+  const since = new Date(Date.now() - OV_HIST_DAYS * 86400000).toISOString();
+  const { data, error } = await fetchAllRows(
+    "work_log_history",
+    "id, work_log_id, user_id, action, changed_by_role, changed_at, old_data, new_data, profiles ( id, full_name )",
+    (q) => q.eq("changed_by_role", "employee").gte("changed_at", since).order("changed_at", { ascending: false })
+  );
+  if (error) {
+    // tabella assente o non leggibile: il riquadro non si mostra
+    if (headEl) headEl.hidden = true;
+    listEl.hidden = true;
+    return;
+  }
+  if (headEl) headEl.hidden = false;
+  listEl.hidden = false;
+
+  const events = data || [];
+  if (infoEl) infoEl.textContent = events.length ? `${events.length} negli ultimi ${OV_HIST_DAYS} giorni` : "";
+  if (!events.length) {
+    listEl.innerHTML = `<div class="empty-state">Nessuna modifica dei dipendenti negli ultimi ${OV_HIST_DAYS} giorni ✅</div>`;
+    return;
+  }
+
+  const shown = ovHistExpanded ? events : events.slice(0, OV_HIST_SHOWN);
+  listEl.innerHTML =
+    `<div class="hist-list hist-list--flat">` +
+    shown.map((h) => {
+      const name = (h.profiles?.full_name || "").trim() || "Senza nome";
+      const when = fmtHistWhen.format(new Date(h.changed_at));
+      const month = String((h.old_data || h.new_data)?.work_date || "").slice(0, 7);
+      const day = h.old_data?.work_date ? formatDateIT(String(h.old_data.work_date).slice(0, 10)) : "";
+      return `
+        <div class="hist-item${h.action === "delete" ? " is-delete" : ""}">
+          <div class="hist-head">
+            <button class="ov-miss-name" type="button" data-open-emp data-emp-id="${escapeHtml(String(h.user_id))}" data-emp-name="${escapeHtml(name)}" data-emp-month="${escapeHtml(month)}">${escapeHtml(name)}</button>
+            · <strong>${h.action === "delete" ? "ha eliminato" : "ha modificato"}</strong> ${day ? `le ore del ${escapeHtml(day)}` : "una registrazione"}
+            <span class="muted">· ${escapeHtml(when)}</span>
+          </div>
+          ${histChangeLinesHtml(h)}
+        </div>`;
+    }).join("") +
+    `</div>` +
+    (events.length > OV_HIST_SHOWN
+      ? `<button class="btn small ghost" type="button" id="ovHistMore">${ovHistExpanded ? "Mostra meno" : `Mostra tutte (${events.length})`}</button>`
+      : "");
+
+  document.getElementById("ovHistMore")?.addEventListener("click", () => {
+    ovHistExpanded = !ovHistExpanded;
+    loadRecentEdits();
+  });
+  bindOpenEmployeeButtons(listEl);
 }
 
 // ============================
