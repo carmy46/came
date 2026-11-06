@@ -456,18 +456,19 @@ async function loadEmployees() {
 
   try {
     // di default: role=employee (se nel DB è impostato così)
-    let { data, error } = await supabaseClient
-      .from("profiles")
-      .select("id, full_name, role, active")
-      .eq("role", "employee")
-      .order("full_name", { ascending: true });
+    let { data, error } = await fetchAllRows(
+      "profiles",
+      "id, full_name, role, active",
+      (q) => q.eq("role", "employee").order("full_name", { ascending: true })
+    );
 
     // fallback: se non torna nulla, carica tutti e filtra client-side
     if (!error && (!data || data.length === 0)) {
-      const res = await supabaseClient
-        .from("profiles")
-        .select("id, full_name, role, active")
-        .order("full_name", { ascending: true });
+      const res = await fetchAllRows(
+        "profiles",
+        "id, full_name, role, active",
+        (q) => q.order("full_name", { ascending: true })
+      );
       data = res.data;
       error = res.error;
     }
@@ -557,11 +558,11 @@ async function loadOverview() {
 
   // Ore del mese (tutti) + totale per dipendente
   try {
-    const { data, error } = await supabaseClient
-      .from("work_logs")
-      .select("user_id,work_date,start_time,end_time,break_start,break_end,profiles ( id, full_name )")
-      .gte("work_date", start)
-      .lte("work_date", end);
+    const { data, error } = await fetchAllRows(
+      "work_logs",
+      "id,user_id,work_date,start_time,end_time,break_start,break_end,profiles ( id, full_name )",
+      (q) => q.gte("work_date", start).lte("work_date", end)
+    );
     if (error) throw error;
 
     const todayISO = getTodayISO();
@@ -621,12 +622,11 @@ async function loadOverview() {
 
   // Ordini del mese ancora da consegnare (un ordine = dipendente + giorno + luogo, come in Prodotti)
   try {
-    const { data, error } = await supabaseClient
-      .from("product_orders")
-      .select("user_id,order_date,place")
-      .is("delivery_date", null)
-      .gte("order_date", start)
-      .lte("order_date", end);
+    const { data, error } = await fetchAllRows(
+      "product_orders",
+      "id,user_id,order_date,place",
+      (q) => q.is("delivery_date", null).gte("order_date", start).lte("order_date", end)
+    );
     if (error) throw error;
     const keys = new Set((data || []).map(r => `${r.user_id}|${r.order_date}|${r.place || ""}`));
     set("ovPendingOrders", keys.size);
@@ -657,13 +657,15 @@ async function loadMissingHours(ym, monthLogs) {
   try {
     const { start, end } = monthRange(ym);
     const [{ data: profiles, error: e1 }, { data: reqs, error: e2 }] = await Promise.all([
-      supabaseClient.from("profiles").select("id, full_name, role, phone, created_at, active"),
-      supabaseClient
-        .from("requests")
-        .select("user_id, type, status, start_date, end_date")
-        .in("type", ["ferie", "permesso_giornaliero"])
-        .neq("status", "rifiutata")
-        .lte("start_date", end),
+      fetchAllRows("profiles", "id, full_name, role, phone, created_at, active"),
+      fetchAllRows(
+        "requests",
+        "id, user_id, type, status, start_date, end_date",
+        (q) => q
+          .in("type", ["ferie", "permesso_giornaliero"])
+          .neq("status", "rifiutata")
+          .lte("start_date", end)
+      ),
     ]);
     if (e1) throw e1;
     if (e2) throw e2;
@@ -792,25 +794,15 @@ document.getElementById("exportAllHoursBtn")?.addEventListener("click", async ()
     endDate.setDate(0);
     const end = `${ym}-${String(endDate.getDate()).padStart(2, "0")}`;
 
-    const { data, error } = await supabaseClient
-      .from("work_logs")
-      .select(`
-        id,
-        user_id,
-        work_date,
-        start_time,
-        end_time,
-        break_start,
-        break_end,
-        location,
-        activity,
-        created_at,
-        profiles ( id, full_name )
-      `)
-      .gte("work_date", start)
-      .lte("work_date", end)
-      .order("work_date", { ascending: true })
-      .order("created_at", { ascending: true });
+    const { data, error } = await fetchAllRows(
+      "work_logs",
+      "id, user_id, work_date, start_time, end_time, break_start, break_end, location, activity, created_at, profiles ( id, full_name )",
+      (q) => q
+        .gte("work_date", start)
+        .lte("work_date", end)
+        .order("work_date", { ascending: true })
+        .order("created_at", { ascending: true })
+    );
 
     if (error) throw error;
 
@@ -1063,23 +1055,15 @@ async function loadProducts() {
   try {
     const { start, end } = monthRange(month);
 
-    const { data, error } = await supabaseClient
-      .from("product_orders")
-      .select(`
-        id,
-        user_id,
-        order_date,
-        delivery_date,
-        place,
-        product_name,
-        quantity,
-        created_at,
-        profiles ( id, full_name )
-      `)
-      .gte("order_date", start)
-      .lte("order_date", end)
-      .order("order_date", { ascending: false })
-      .order("created_at", { ascending: false });
+    const { data, error } = await fetchAllRows(
+      "product_orders",
+      "id, user_id, order_date, delivery_date, place, product_name, quantity, created_at, profiles ( id, full_name )",
+      (q) => q
+        .gte("order_date", start)
+        .lte("order_date", end)
+        .order("order_date", { ascending: false })
+        .order("created_at", { ascending: false })
+    );
 
     if (error) {
       console.error(error);
@@ -1312,31 +1296,20 @@ async function loadRequests() {
 
   try {
     // Lo stato si filtra qui sotto: così i bottoni mostrano sempre i conteggi
-    let q = supabaseClient
-      .from("requests")
-      .select(`
-        id,
-        user_id,
-        type,
-        start_date,
-        end_date,
-        time,
-        status,
-        note,
-        created_at,
-        profiles ( id, full_name )
-      `)
-      .order("created_at", { ascending: false });
-
-    if (type) q = q.eq("type", type);
-
-    // filtro mese sulla data richiesta (start_date)
-    if (month) {
-      const { start, end } = monthRange(month);
-      q = q.gte("start_date", start).lte("start_date", end);
-    }
-
-    const { data, error } = await q;
+    const { data, error } = await fetchAllRows(
+      "requests",
+      "id, user_id, type, start_date, end_date, time, status, note, created_at, profiles ( id, full_name )",
+      (q) => {
+        q = q.order("created_at", { ascending: false });
+        if (type) q = q.eq("type", type);
+        // filtro mese sulla data richiesta (start_date)
+        if (month) {
+          const { start, end } = monthRange(month);
+          q = q.gte("start_date", start).lte("start_date", end);
+        }
+        return q;
+      }
+    );
 
     if (error) {
       console.error(error);
@@ -1464,14 +1437,16 @@ async function loadEmpHours() {
   endDate.setDate(0);
   const end = `${ym}-${String(endDate.getDate()).padStart(2, "0")}`;
 
-  const { data, error } = await supabaseClient
-    .from("work_logs")
-    .select("id,user_id,work_date,start_time,end_time,break_start,break_end,location,activity,created_at")
-    .eq("user_id", adminEmpSelected.id)
-    .gte("work_date", start)
-    .lte("work_date", end)
-    .order("work_date", { ascending: false })
-    .order("created_at", { ascending: false });
+  const { data, error } = await fetchAllRows(
+    "work_logs",
+    "id,user_id,work_date,start_time,end_time,break_start,break_end,location,activity,created_at",
+    (q) => q
+      .eq("user_id", adminEmpSelected.id)
+      .gte("work_date", start)
+      .lte("work_date", end)
+      .order("work_date", { ascending: false })
+      .order("created_at", { ascending: false })
+  );
 
   if (error) {
     console.error(error);
@@ -1606,11 +1581,11 @@ function validateWorkLogLike({ start_time, end_time, break_start, break_end }) {
 async function loadAdminCatalogLists() {
   if (adminCatalogListsLoaded) return;
   try {
-    const { data, error } = await supabaseClient
-      .from("catalog_items")
-      .select("type,name")
-      .eq("active", true)
-      .order("sort_order", { ascending: true });
+    const { data, error } = await fetchAllRows(
+      "catalog_items",
+      "id,type,name",
+      (q) => q.eq("active", true).order("sort_order", { ascending: true })
+    );
     if (error) throw error;
     const fill = (listId, type) => {
       const dl = document.getElementById(listId);
@@ -1805,25 +1780,24 @@ async function loadEmpRequests() {
   const month = (empReqMonthEl?.value || "").trim(); // YYYY-MM
 
   try {
-    let q = supabaseClient
-      .from("requests")
-      .select("id,user_id,type,start_date,end_date,time,status,note,created_at")
-      .eq("user_id", adminEmpSelected.id)
-      .order("created_at", { ascending: false });
-
-    if (status) q = q.eq("status", status);
-    if (type) q = q.eq("type", type);
-
-    if (month) {
-      const start = `${month}-01`;
-      const endDate = new Date(month + "-01T00:00:00");
-      endDate.setMonth(endDate.getMonth() + 1);
-      endDate.setDate(0);
-      const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
-      q = q.gte("start_date", start).lte("start_date", end);
-    }
-
-    const { data, error } = await q;
+    const { data, error } = await fetchAllRows(
+      "requests",
+      "id,user_id,type,start_date,end_date,time,status,note,created_at",
+      (q) => {
+        q = q.eq("user_id", adminEmpSelected.id).order("created_at", { ascending: false });
+        if (status) q = q.eq("status", status);
+        if (type) q = q.eq("type", type);
+        if (month) {
+          const start = `${month}-01`;
+          const endDate = new Date(month + "-01T00:00:00");
+          endDate.setMonth(endDate.getMonth() + 1);
+          endDate.setDate(0);
+          const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
+          q = q.gte("start_date", start).lte("start_date", end);
+        }
+        return q;
+      }
+    );
     if (error) throw error;
 
     empReqRows = data || [];
@@ -2111,11 +2085,11 @@ document.getElementById("adminProdConsumptionBtn")?.addEventListener("click", as
   try {
     if (btn) { btn.disabled = true; btn.textContent = "Genero..."; }
 
-    const { data, error } = await supabaseClient
-      .from("product_orders")
-      .select("place,product_name,quantity,order_date")
-      .gte("order_date", start)
-      .lte("order_date", end);
+    const { data, error } = await fetchAllRows(
+      "product_orders",
+      "id,place,product_name,quantity,order_date",
+      (q) => q.gte("order_date", start).lte("order_date", end)
+    );
 
     if (error) { console.error(error); alert("Errore nel caricamento dei dati per il report."); return; }
     if (!data || data.length === 0) { alert(`Nessun ordine prodotti nel ${year}.`); return; }
@@ -2229,12 +2203,14 @@ async function loadCatalogAdmin() {
   if (!catalogListEl) return;
   catalogListEl.textContent = "Caricamento...";
   try {
-    const { data, error } = await supabaseClient
-      .from("catalog_items")
-      .select("id,name,active,sort_order,category")
-      .eq("type", catalogCurrentType)
-      .order("sort_order", { ascending: true })
-      .order("name", { ascending: true });
+    const { data, error } = await fetchAllRows(
+      "catalog_items",
+      "id,name,active,sort_order,category",
+      (q) => q
+        .eq("type", catalogCurrentType)
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true })
+    );
 
     if (error) {
       console.error(error);

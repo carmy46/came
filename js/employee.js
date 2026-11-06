@@ -210,12 +210,11 @@ function renderProductRows(productNames) {
 // Carica il catalogo dal DB e aggiorna liste prodotti/luoghi/attività
 async function loadCatalog() {
   try {
-    const { data, error } = await supabaseClient
-      .from("catalog_items")
-      .select("type,name")
-      .eq("active", true)
-      .order("sort_order", { ascending: true })
-      .order("name", { ascending: true });
+    const { data, error } = await fetchAllRows(
+      "catalog_items",
+      "id,type,name",
+      (q) => q.eq("active", true).order("sort_order", { ascending: true }).order("name", { ascending: true })
+    );
 
     if (error) {
       console.error("Errore caricamento catalogo:", error);
@@ -751,12 +750,11 @@ async function loadHomeSummary() {
     const mEnd = `${ym}-${String(mEndDate.getDate()).padStart(2, "0")}`;
 
     // Filtra sempre per user_id: riduce carico e dipendenza dalle policy RLS
-    const pWorkWeek = supabaseClient
-      .from("work_logs")
-      .select("work_date,start_time,end_time,break_start,break_end")
-      .eq("user_id", user.id)
-      .gte("work_date", weekStart)
-      .lte("work_date", weekEnd);
+    const pWorkWeek = fetchAllRows(
+      "work_logs",
+      "id,work_date,start_time,end_time,break_start,break_end",
+      (q) => q.eq("user_id", user.id).gte("work_date", weekStart).lte("work_date", weekEnd)
+    );
 
     const pReqPending = supabaseClient
       .from("requests")
@@ -772,21 +770,17 @@ async function loadHomeSummary() {
       .gte("start_date", mStart)
       .lte("start_date", mEnd);
 
-    const pPoOpen = supabaseClient
-      .from("product_orders")
-      .select("order_date,place,delivery_date")
-      .eq("user_id", user.id)
-      .gte("order_date", mStart)
-      .lte("order_date", mEnd)
-      .is("delivery_date", null);
+    const pPoOpen = fetchAllRows(
+      "product_orders",
+      "id,order_date,place,delivery_date",
+      (q) => q.eq("user_id", user.id).gte("order_date", mStart).lte("order_date", mEnd).is("delivery_date", null)
+    );
 
-    const pPoDelivered = supabaseClient
-      .from("product_orders")
-      .select("order_date,place,delivery_date")
-      .eq("user_id", user.id)
-      .gte("order_date", mStart)
-      .lte("order_date", mEnd)
-      .not("delivery_date", "is", null);
+    const pPoDelivered = fetchAllRows(
+      "product_orders",
+      "id,order_date,place,delivery_date",
+      (q) => q.eq("user_id", user.id).gte("order_date", mStart).lte("order_date", mEnd).not("delivery_date", "is", null)
+    );
 
     const [
       { data: workW, error: e1 },
@@ -1377,14 +1371,16 @@ async function loadProductsArchive(ym) {
     endDate.setDate(0);
     const end = `${ym}-${String(endDate.getDate()).padStart(2, "0")}`;
 
-    const { data, error } = await supabaseClient
-      .from("product_orders")
-      .select("id,order_date,delivery_date,place,product_name,quantity,created_at")
-      .eq("user_id", user.id)
-      .gte("order_date", start)
-      .lte("order_date", end)
-      .order("order_date", { ascending: false })
-      .order("created_at", { ascending: false });
+    const { data, error } = await fetchAllRows(
+      "product_orders",
+      "id,order_date,delivery_date,place,product_name,quantity,created_at",
+      (q) => q
+        .eq("user_id", user.id)
+        .gte("order_date", start)
+        .lte("order_date", end)
+        .order("order_date", { ascending: false })
+        .order("created_at", { ascending: false })
+    );
 
     if (error) {
       console.error(error);
@@ -1679,12 +1675,11 @@ async function loadRequestsPendingArchive(ym) {
       return;
     }
 
-    const { data, error } = await supabaseClient
-      .from("requests")
-      .select("id,type,start_date,end_date,time,status,note,created_at")
-      .eq("user_id", user.id)
-      .eq("status", "inviata")
-      .order("created_at", { ascending: false });
+    const { data, error } = await fetchAllRows(
+      "requests",
+      "id,type,start_date,end_date,time,status,note,created_at",
+      (q) => q.eq("user_id", user.id).eq("status", "inviata").order("created_at", { ascending: false })
+    );
 
     if (error) {
       console.error(error);
@@ -1906,14 +1901,16 @@ async function loadRequestsArchive(ym) {
     endDate.setDate(0);
     const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
 
-    const { data, error } = await supabaseClient
-      .from("requests")
-      .select("id,type,start_date,end_date,time,status,note,created_at")
-      .eq("user_id", user.id)
-      .in("status", ["approvata", "rifiutata"])
-      .gte("start_date", start)
-      .lte("start_date", end)
-      .order("created_at", { ascending: false });
+    const { data, error } = await fetchAllRows(
+      "requests",
+      "id,type,start_date,end_date,time,status,note,created_at",
+      (q) => q
+        .eq("user_id", user.id)
+        .in("status", ["approvata", "rifiutata"])
+        .gte("start_date", start)
+        .lte("start_date", end)
+        .order("created_at", { ascending: false })
+    );
 
     if (error) {
       console.error(error);
@@ -2167,14 +2164,16 @@ async function loadArchive() {
     loadRequestsArchive(ym);
     loadProductsArchive(ym);
 
-    const { data, error } = await supabaseClient
-      .from("work_logs")
-      .select("id,work_date,start_time,end_time,break_start,break_end,location,activity,created_at")
-      .eq("user_id", user.id)
-      .gte("work_date", start)
-      .lte("work_date", end)
-      .order("work_date", { ascending: false })
-      .order("created_at", { ascending: false });
+    const { data, error } = await fetchAllRows(
+      "work_logs",
+      "id,work_date,start_time,end_time,break_start,break_end,location,activity,created_at",
+      (q) => q
+        .eq("user_id", user.id)
+        .gte("work_date", start)
+        .lte("work_date", end)
+        .order("work_date", { ascending: false })
+        .order("created_at", { ascending: false })
+    );
 
     if (error) {
       console.error(error);

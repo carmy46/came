@@ -96,6 +96,47 @@
     if (error) throw error;
   }
 
+  // Legge TUTTE le righe di una query, a blocchi.
+  // Supabase restituisce al massimo ~1000 righe per richiesta e, se ce ne sono di più, taglia
+  // senza dare errore: i totali risulterebbero sbagliati. Qui si chiede il conteggio esatto e si
+  // continua finché non sono arrivate tutte; se alla fine ne manca anche una sola si restituisce
+  // un errore (meglio nessun dato che un dato incompleto).
+  //   table   = nome tabella
+  //   columns = stringa del select (join compresi, es. "id, profiles ( full_name )")
+  //   apply   = funzione che riceve la query e aggiunge filtri/ordinamenti (facoltativa)
+  // Ritorna { data, error } come una query normale. Aggiunge in coda l'ordinamento per "id"
+  // così i blocchi non si sovrappongono e non saltano righe.
+  async function fetchAllRows(table, columns, apply) {
+    const client = getClient();
+    if (!client) return { data: null, error: new Error("Supabase non configurato.") };
+
+    const PAGE = 1000;
+    const rows = [];
+    let total = null;
+    try {
+      for (;;) {
+        let q = client.from(table).select(columns, { count: "exact" });
+        if (typeof apply === "function") q = apply(q);
+        const { data, error, count } = await q
+          .order("id", { ascending: true })
+          .range(rows.length, rows.length + PAGE - 1);
+        if (error) return { data: null, error };
+
+        if (total === null) total = count ?? 0;
+        const page = data || [];
+        for (const r of page) rows.push(r);
+        if (!page.length || rows.length >= total) break;
+      }
+    } catch (e) {
+      return { data: null, error: e };
+    }
+
+    if (rows.length < total) {
+      return { data: null, error: new Error(`Dati incompleti da "${table}": ricevute ${rows.length} righe su ${total}.`) };
+    }
+    return { data: rows, error: null };
+  }
+
   // API globale semplice
   window.SupabaseApi = {
     isConfigured,
@@ -113,4 +154,5 @@
   window.supabaseClient = getClient();
   window.getCurrentUser = getCurrentUser;
   window.getMyProfile = getMyProfile;
+  window.fetchAllRows = fetchAllRows;
 })();
